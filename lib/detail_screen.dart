@@ -65,7 +65,7 @@ class _DetailScreenState extends State<DetailScreen> {
     }
   }
 
-  // --- 1. FUNÇÃO DE PARSER (A CORREÇÃO) ---
+
   /// Converte com segurança um campo do Firestore que pode ser
   /// uma List<dynamic> ou uma única String.
   List<String> _parseListField(dynamic data) {
@@ -79,7 +79,7 @@ class _DetailScreenState extends State<DetailScreen> {
     }
     return []; // Se for nulo ou outro tipo, retorna lista vazia
   }
-  // --- FIM DA CORREÇÃO ---
+
 
 
   // Widget para TÓPICOS DE TEXTO
@@ -217,7 +217,7 @@ class _DetailScreenState extends State<DetailScreen> {
     final String usosValor = data['usosEValorEconomico'] ?? '';
     final String farmacologia = data['farmacologia'] ?? '';
     
-    // --- 2. CAMPOS DE LINK (USANDO O PARSER SEGURO) ---
+    // CAMPOS DE LINK 
     final List<String> refFarmacologicas = _parseListField(data['referenciasFarmacologicas']);
     final List<String> refGeral = _parseListField(data['referenciaGeral']);
 
@@ -236,7 +236,7 @@ class _DetailScreenState extends State<DetailScreen> {
     ];
 
     if (hasModel3D) {
-      // --- LAYOUT COM 3D ---
+      // LAYOUT COM 3D
       return Scaffold(
         body: CustomScrollView(
           slivers: [
@@ -277,7 +277,7 @@ class _DetailScreenState extends State<DetailScreen> {
         ),
       );
     } else {
-      // --- LAYOUT COM 2D ---
+      // LAYOUT COM 2D
       return Scaffold(
         body: CustomScrollView(
           slivers: [

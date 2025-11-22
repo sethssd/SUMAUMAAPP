@@ -19,7 +19,7 @@ class _ManageAdminsScreenState extends State<ManageAdminsScreen> {
   // Cada documento deve conter pelo menos: { email: string, role: string }
   final usersCollection = FirebaseFirestore.instance.collection('users');
 
-  // --- FUNÇÃO: Atualiza o cargo do usuário no Firestore ---
+  // FUNÇÃO: Atualiza o cargo do usuário no Firestore
   // uid: id do documento (normalmente uid do Firebase Auth)
   // newRole: string representando o novo cargo ('user', 'escritor', 'admin', 'super_admin', etc.)
   Future<void> _updateUserRole(String uid, String newRole) async {
@@ -43,7 +43,7 @@ class _ManageAdminsScreenState extends State<ManageAdminsScreen> {
     }
   }
 
-  // --- DIÁLOGO: Permite escolher o novo cargo para um usuário existente ---
+  // DIÁLOGO: Permite escolher o novo cargo para um usuário existente
   // Bloqueamos alterações para 'super_admin' por segurança.
   void _showRoleDialog(String uid, String email, String currentRole) {
     if (currentRole == 'super_admin') {
@@ -82,7 +82,7 @@ class _ManageAdminsScreenState extends State<ManageAdminsScreen> {
     );
   }
 
-  // --- DIÁLOGO: Cria um novo usuário com cargo 'escritor' ---
+  // DIÁLOGO: Cria um novo usuário com cargo 'escritor'
   // Este fluxo cria primeiro a conta no FirebaseAuth e, se bem sucedido,
   // escreve um documento na coleção 'users' com o campo 'role'.
   void _showCreateWriterDialog() {
