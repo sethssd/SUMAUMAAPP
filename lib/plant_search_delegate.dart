@@ -9,7 +9,7 @@ class PlantSearchDelegate extends SearchDelegate {
 
   @override
   ThemeData appBarTheme(BuildContext context) {
-    // ... (código do tema não muda)
+   
     final ThemeData theme = Theme.of(context);
     return theme.copyWith(
       appBarTheme: theme.appBarTheme.copyWith(
@@ -26,7 +26,7 @@ class PlantSearchDelegate extends SearchDelegate {
 
   @override
   List<Widget>? buildActions(BuildContext context) {
-    // ... (código do buildActions não muda)
+   
     return [
       IconButton(
         icon: const Icon(Icons.clear),
@@ -40,7 +40,7 @@ class PlantSearchDelegate extends SearchDelegate {
 
   @override
   Widget? buildLeading(BuildContext context) {
-    // ... (código do buildLeading não muda)
+    
     return IconButton(
       icon: const Icon(Icons.arrow_back),
       onPressed: () {
@@ -49,7 +49,7 @@ class PlantSearchDelegate extends SearchDelegate {
     );
   }
 
-  // --- MUDANÇA PRINCIPAL AQUI ---
+  // MUDANÇA PRINCIPAL AQUI
   @override
   Widget buildResults(BuildContext context) {
     if (query.isEmpty) {
@@ -60,7 +60,7 @@ class PlantSearchDelegate extends SearchDelegate {
     final String searchQuery = query.toLowerCase().trim();
 
     return FutureBuilder<QuerySnapshot>(
-      // AQUI ESTÁ A NOVA QUERY:
+      
       // Usamos 'array-contains' no campo 'keywords'
       future: FirebaseFirestore.instance
           .collection('plantas')
@@ -106,7 +106,7 @@ class PlantSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildSuggestions(BuildContext context) {
-    // ... (código do buildSuggestions não muda)
+   
     return const Center(
       child: Padding(
         padding: EdgeInsets.all(16.0),

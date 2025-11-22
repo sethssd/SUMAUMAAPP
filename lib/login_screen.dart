@@ -12,13 +12,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  // --- Função PULAR ---
+  // Função PULAR
   void skipLogin() {
     // Apenas fecha a tela de login
     Navigator.pop(context);
   }
 
-  // --- Função de Login com E-mail ---
+  //Função de Login com E-mail 
   Future<void> signIn() async {
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -36,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // --- Função de Criar Conta com E-mail ---
+  // Função de Criar Conta com E-mail
   Future<void> signUp() async {
     try {
       await FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -54,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // --- Função de Login com GOOGLE ---
+  //  Função de Login com GOOGLE 
   Future<void> signInWithGoogle() async {
     // Google Sign-In (temporariamente desativado)
     // Funcionalidade reativada quando a integração estiver pronta
@@ -83,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // --- Botão de PULAR ---
+        //  Botão de PULAR 
         leading: TextButton(
           onPressed: skipLogin,
           child: const Text(
@@ -99,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // --- Botão LOGIN COM GOOGLE ---
+            //  Botão LOGIN COM GOOGLE 
             ElevatedButton.icon(
               icon: const Icon(Icons.g_mobiledata, size: 28), // Ícone do Google
               label: const Text("Entrar com Google"),

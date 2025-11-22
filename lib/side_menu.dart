@@ -141,7 +141,7 @@ class _SideMenuState extends State<SideMenu> {
             ),
           ),
 
-          // --- Menu de Administração (visível apenas para admin/escritor/super_admin) ---
+          // Menu de Administração (visível apenas para admin/escritor/super_admin)
           
           // Opção "Gerenciar Plantas" - visível para escritor, admin, e super_admin
           if (_userRole == 'escritor' || _userRole == 'admin' || _userRole == 'super_admin')
@@ -175,7 +175,7 @@ class _SideMenuState extends State<SideMenu> {
           if (_userRole == 'escritor' || _userRole == 'admin' || _userRole == 'super_admin')
             const Divider(),
 
-          // --- Menu Geral ---
+          // Menu Geral
 
           ListTile(
   leading: const Icon(Icons.lightbulb_outline),
@@ -205,7 +205,7 @@ class _SideMenuState extends State<SideMenu> {
             },
           ),
           
-          // --- Opção de Logout (visível apenas para admin/escritor/super_admin) ---
+          // Opção de Logout (visível apenas para admin/escritor/super_admin)
           if (_userRole == 'escritor' || _userRole == 'admin' || _userRole == 'super_admin')
             const Divider(),
           if (_userRole == 'escritor' || _userRole == 'admin' || _userRole == 'super_admin')

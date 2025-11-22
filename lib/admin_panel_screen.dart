@@ -46,7 +46,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     }
   }
 
-// ... (mantenha o resto do arquivo, apenas substitua a função build)
+// ... 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,7 +71,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
             Text("Seu cargo: $_userRole", style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 20),
 
-            // --- Botões do Painel ---
+            // Botões do Painel
             
             // MUDOU AQUI: Agora 'escritor' pode ver este botão
             if (_userRole == 'escritor' || _userRole == 'super_admin')
@@ -87,7 +87,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
 
             const SizedBox(height: 10),
 
-            // Botão visível APENAS para o super_admin (A sua permissão)
+            // Botão visível APENAS para o super_admin 
             if (_userRole == 'super_admin')
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),

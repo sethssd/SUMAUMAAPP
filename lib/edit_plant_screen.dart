@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// 1. NOVOS IMPORTS
+
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
@@ -16,7 +16,7 @@ class EditPlantScreen extends StatefulWidget {
 }
 
 class _EditPlantScreenState extends State<EditPlantScreen> {
-  // ... (todos os seus controladores de texto continuam iguais)
+
   final _nomeController = TextEditingController();
   final _nomeCientificoController = TextEditingController();
   final _descricaoCurtaController = TextEditingController();
@@ -42,14 +42,14 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
 
   // 3. INICIALIZAR O CLOUDINARY
   final cloudinary = CloudinaryPublic(
-    '***REMOVED***',     // <-- COLOQUE SEU CLOUD NAME AQUI
-    '***REMOVED***',  // <-- COLOQUE SEU UPLOAD PRESET AQUI
+    '***REMOVED***',     
+    '***REMOVED***',  
     cache: false
   );
 
   @override
   void initState() {
-    // ... (initState continua igual)
+    
     super.initState();
     if (widget.plantaId != null) {
       _isEditing = true;
@@ -57,7 +57,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
     }
   }
 
-  // ... (_parseListFieldToString e _loadPlantaData continuam iguais)
+
   String _parseListFieldToString(dynamic data) {
     if (data is List) {
       return data.map((item) => item.toString()).toList().join(', ');
@@ -258,7 +258,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                       decoration: const InputDecoration(labelText: 'Descrição Curta (para lista)'),
                     ),
 
-                    // --- CAMPO DE UPLOAD DE IMAGEM 2D ---
+                    // CAMPO DE UPLOAD DE IMAGEM 2D
                     TextFormField(
                       controller: _imagemUrlController,
                       decoration: InputDecoration(
@@ -274,7 +274,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                       readOnly: _isUploadingImage, // Trava o campo durante o upload
                     ),
 
-                    // --- CAMPO DE UPLOAD DE MODELO 3D ---
+                    // CAMPO DE UPLOAD DE MODELO 3D
                     TextFormField(
                       controller: _modelo3dUrlController,
                       decoration: InputDecoration(
