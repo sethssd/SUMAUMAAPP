@@ -1,21 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'detail_screen.dart';
+import '../screens/detail_screen.dart';
 
 class PlantSearchDelegate extends SearchDelegate {
-  
   @override
   String? get searchFieldLabel => "Buscar por nome ou palavra-chave...";
 
   @override
   ThemeData appBarTheme(BuildContext context) {
-   
     final ThemeData theme = Theme.of(context);
     return theme.copyWith(
       appBarTheme: theme.appBarTheme.copyWith(
         backgroundColor: Colors.green, // Cor do seu AppBar
         iconTheme: theme.primaryIconTheme.copyWith(color: Colors.white),
-        titleTextStyle: theme.textTheme.titleLarge?.copyWith(color: Colors.white),
+        titleTextStyle: theme.textTheme.titleLarge?.copyWith(
+          color: Colors.white,
+        ),
       ),
       inputDecorationTheme: const InputDecorationTheme(
         hintStyle: TextStyle(color: Colors.white70),
@@ -26,12 +26,11 @@ class PlantSearchDelegate extends SearchDelegate {
 
   @override
   List<Widget>? buildActions(BuildContext context) {
-   
     return [
       IconButton(
         icon: const Icon(Icons.clear),
         onPressed: () {
-          query = ''; 
+          query = '';
           showSuggestions(context);
         },
       ),
@@ -40,11 +39,10 @@ class PlantSearchDelegate extends SearchDelegate {
 
   @override
   Widget? buildLeading(BuildContext context) {
-    
     return IconButton(
       icon: const Icon(Icons.arrow_back),
       onPressed: () {
-        close(context, null); 
+        close(context, null);
       },
     );
   }
@@ -60,7 +58,6 @@ class PlantSearchDelegate extends SearchDelegate {
     final String searchQuery = query.toLowerCase().trim();
 
     return FutureBuilder<QuerySnapshot>(
-      
       // Usamos 'array-contains' no campo 'keywords'
       future: FirebaseFirestore.instance
           .collection('plantas')
@@ -74,7 +71,9 @@ class PlantSearchDelegate extends SearchDelegate {
           return const Center(child: Text("Erro ao buscar. Tente novamente."));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text("Nenhuma planta encontrada para '$query'."));
+          return Center(
+            child: Text("Nenhuma planta encontrada para '$query'."),
+          );
         }
 
         final results = snapshot.data!.docs;
@@ -106,7 +105,6 @@ class PlantSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildSuggestions(BuildContext context) {
-   
     return const Center(
       child: Padding(
         padding: EdgeInsets.all(16.0),

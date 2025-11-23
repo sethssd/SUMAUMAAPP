@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'detail_screen.dart';
-import 'side_menu.dart';
-import 'plant_search_delegate.dart'; 
+import '../widgets/side_menu.dart';
+import '../widgets/plant_search_delegate.dart'; 
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
