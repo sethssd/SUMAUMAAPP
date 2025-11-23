@@ -1,0 +1,5 @@
+ Interface do Usuário (UI) e Experiência (UX)
+Feedback Visual: Melhorar as mensagens de erro e sucesso. Atualmente, alguns erros são apenas printados no console ou mostrados em textos simples. Usar SnackBar ou Dialogs padronizados.
+Imagens: Usar o pacote cached_network_image para carregar imagens. O Image.network padrão não faz cache, o que consome mais dados e deixa o app mais lento.
+Tratamento de Erros de Imagem: Melhorar o placeholder quando uma imagem falha ao carregar.
+Responsividade: Garantir que o layout funcione bem em diferentes tamanhos de tela.

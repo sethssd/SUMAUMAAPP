@@ -1,0 +1,15 @@
+Qualidade de Código e Manutenibilidade
+Reutilização de Código
+
+A função 
+_loadUserRole
+ está duplicada em várias telas (
+AdminPanelScreen
+, 
+ManagePlantsScreen
+). Ela deve ser centralizada em um AuthService.
+Constantes: Strings mágicas como 'users', 'plantas', 'role', 'escritor' 
+devem ser movidas para um arquivo de constantes para evitar erros de digitação.
+
+Gerenciamento de Estado: O uso excessivo de setState pode tornar o app difícil de manter à 
+medida que cresce. Considerar usar Provider ou Riverpod para gerenciar o estado global (como o usuário logado).

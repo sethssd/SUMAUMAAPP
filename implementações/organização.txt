@@ -1,0 +1,12 @@
+Arquitetura e Organização do Código
+Atualmente, o projeto possui uma estrutura "plana" (todos os arquivos na pasta lib), e a lógica de negócios está misturada com a interface do usuário (UI).
+
+Organização de Pastas: Separar o código em pastas funcionais:
+lib/models: Para classes de dados (ex: Plant, User).
+lib/screens: Para as telas do aplicativo.
+lib/widgets: Para componentes reutilizáveis (botões, cards).
+lib/services: Para lógica de backend (Firebase, Auth).
+lib/utils: Para constantes e funções auxiliares.
+Separação de Lógica: Mover as chamadas ao Firebase (Firestore/Auth) para dentro de services. Isso facilita a manutenção e testes. Atualmente, 
+_loadUserRole e chamadas de delete estão dentro dos widgets.
+Modelos de Dados: Criar classes (ex: PlantModel) em vez de usar Map<String, dynamic> diretamente. Isso evita erros de digitação e facilita o uso dos dados.
