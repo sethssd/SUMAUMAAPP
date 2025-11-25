@@ -1,6 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../utils/app_constants.dart';
 import 'manage_admins_screen.dart';
 import 'manage_plants_screen.dart';
 
@@ -12,7 +12,7 @@ class AdminPanelScreen extends StatefulWidget {
 }
 
 class _AdminPanelScreenState extends State<AdminPanelScreen> {
-  String _userRole = 'carregando...'; // Valor padrão
+  String _userRole = AppConstants.statusCarregando; // Valor padrão
 
   @override
   void initState() {
@@ -20,33 +20,16 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     _loadUserRole();
   }
 
-  // Função para buscar o "cargo" do usuário no Firestore
+  // Função para buscar o "cargo" do usuário usando AuthService
   Future<void> _loadUserRole() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        setState(() => _userRole = 'erro');
-        return;
-      }
-      
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      if (doc.exists && doc.data() != null) {
-        setState(() {
-          _userRole = doc.data()!['role'] ?? 'sem_cargo';
-        });
-      } else {
-        setState(() => _userRole = 'sem_cargo');
-      }
-    } catch (e) {
-      setState(() => _userRole = 'erro');
+    final role = await AuthService().getUserRole();
+    if (mounted) {
+      setState(() {
+        _userRole = role;
+      });
     }
   }
 
-// ... 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,10 +40,10 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
             icon: const Icon(Icons.logout),
             tooltip: "Sair",
             onPressed: () {
-              FirebaseAuth.instance.signOut();
+              AuthService().signOut();
               Navigator.pop(context); // Volta para a tela anterior
             },
-          )
+          ),
         ],
       ),
       body: Padding(
@@ -68,34 +51,44 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Seu cargo: $_userRole", style: TextStyle(color: Colors.grey)),
+            Text(
+              "Seu cargo: $_userRole",
+              style: const TextStyle(color: Colors.grey),
+            ),
             const SizedBox(height: 20),
 
             // Botões do Painel
-            
+
             // MUDOU AQUI: Agora 'escritor' pode ver este botão
-            if (_userRole == 'escritor' || _userRole == 'super_admin')
+            if (_userRole == AppConstants.roleEscritor ||
+                _userRole == AppConstants.roleSuperAdmin)
               ElevatedButton(
                 child: const Text("Gerenciar Plantas"),
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ManagePlantsScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const ManagePlantsScreen(),
+                    ),
                   );
                 },
               ),
 
             const SizedBox(height: 10),
 
-            // Botão visível APENAS para o super_admin 
-            if (_userRole == 'super_admin')
+            // Botão visível APENAS para o super_admin
+            if (_userRole == AppConstants.roleSuperAdmin)
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                ),
                 child: const Text("Gerenciar Administradores"),
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ManageAdminsScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const ManageAdminsScreen(),
+                    ),
                   );
                 },
               ),

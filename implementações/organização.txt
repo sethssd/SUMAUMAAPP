@@ -10,3 +10,8 @@ lib/utils: Para constantes e funções auxiliares.
 Separação de Lógica: Mover as chamadas ao Firebase (Firestore/Auth) para dentro de services. Isso facilita a manutenção e testes. Atualmente, 
 _loadUserRole e chamadas de delete estão dentro dos widgets.
 Modelos de Dados: Criar classes (ex: PlantModel) em vez de usar Map<String, dynamic> diretamente. Isso evita erros de digitação e facilita o uso dos dados.
+
+
+###############
+foi feito 
+$$$$$$$$$

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import '../utils/app_constants.dart';
 import 'edit_plant_screen.dart'; // O formulário de adicionar/editar planta
 
 // Tela para gerenciar plantas. A capacidade de deletar plantas é
@@ -15,7 +16,7 @@ class ManagePlantsScreen extends StatefulWidget {
 
 class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
   // Armazena o cargo do usuário atual (carregado do documento 'users/<uid>')
-  String _userRole = 'carregando...';
+  String _userRole = AppConstants.statusCarregando;
 
   @override
   void initState() {
@@ -25,38 +26,36 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
 
   // Carrega o cargo do usuário logado a partir do Firestore.
   Future<void> _loadUserRole() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        setState(() => _userRole = 'sem_cargo');
-        return;
-      }
-
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      if (doc.exists && doc.data() != null) {
-        setState(() => _userRole = doc.data()!['role'] ?? 'sem_cargo');
-      } else {
-        setState(() => _userRole = 'sem_cargo');
-      }
-    } catch (e) {
-      debugPrint('Erro ao carregar cargo do usuário: $e');
-      setState(() => _userRole = 'erro');
+    final role = await AuthService().getUserRole();
+    if (mounted) {
+      setState(() {
+        _userRole = role;
+      });
     }
   }
 
   // Função para deletar uma planta.
   Future<void> _deletePlant(String id, String nome) async {
     try {
-      await FirebaseFirestore.instance.collection('plantas').doc(id).delete();
+      await FirebaseFirestore.instance
+          .collection(AppConstants.collectionPlants)
+          .doc(id)
+          .delete();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$nome foi deletada.'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text('$nome foi deletada.'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao deletar $nome: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Erro ao deletar $nome: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -65,7 +64,7 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
   @override
   Widget build(BuildContext context) {
     // 1. PEGAMOS O ID DO USUÁRIO ATUAL LOGADO
-    final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final String? currentUserId = AuthService().getCurrentUserId();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Gerenciar Plantas')),
@@ -79,7 +78,9 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
         },
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('plantas').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection(AppConstants.collectionPlants)
+            .snapshots(),
         builder: (context, snapshot) {
           // ... (código de loading, erro, e lista vazia continua igual) ...
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -104,21 +105,23 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
             itemBuilder: (context, index) {
               final planta = plantas[index];
               final data = planta.data() as Map<String, dynamic>;
-              final String nome = data['nome'] ?? 'Planta sem nome';
-              
+              final String nome =
+                  data[AppConstants.fieldNome] ?? 'Planta sem nome';
+
               // 2. PEGAMOS O ID DO CRIADOR DA PLANTA
-              final String? plantCreatorId = data['creatorId'];
+              final String? plantCreatorId = data[AppConstants.fieldCreatorId];
 
               final tile = ListTile(
                 title: Text(nome),
-                subtitle: Text(data['nomeCientifico'] ?? ''),
+                subtitle: Text(data[AppConstants.fieldNomeCientifico] ?? ''),
                 trailing: IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => EditPlantScreen(plantaId: planta.id),
+                        builder: (context) =>
+                            EditPlantScreen(plantaId: planta.id),
                       ),
                     );
                   },
@@ -127,15 +130,15 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
 
               // 3. NOVA LÓGICA DE PERMISSÃO
               bool canDelete = false;
-              
+
               // O Super Admin pode deletar qualquer coisa
-              if (_userRole == 'super_admin') {
+              if (_userRole == AppConstants.roleSuperAdmin) {
                 canDelete = true;
-              } 
+              }
               // O Escritor só pode deletar se o ID dele for igual ao ID do criador
-              else if (_userRole == 'escritor' &&
-                       plantCreatorId != null &&
-                       plantCreatorId == currentUserId) {
+              else if (_userRole == AppConstants.roleEscritor &&
+                  plantCreatorId != null &&
+                  plantCreatorId == currentUserId) {
                 canDelete = true;
               }
 
@@ -158,8 +161,14 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
                         title: const Text('Confirmar'),
                         content: Text('Deseja realmente deletar "$nome"?'),
                         actions: [
-                          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancelar')),
-                          ElevatedButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Deletar')),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text('Cancelar'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: const Text('Deletar'),
+                          ),
                         ],
                       ),
                     );
