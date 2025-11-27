@@ -178,7 +178,7 @@ class _DetailScreenState extends State<DetailScreen> {
                       onPressed: () => _launchURL(link),
                     ),
                   );
-                }).toList(),
+                }),
               ],
             ],
           ),

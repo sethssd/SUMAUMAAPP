@@ -123,20 +123,20 @@ class _SideMenuState extends State<SideMenu> {
               _cancelTimer(); // Cancela o timer
             },
             // 4. O cabeçalho que o usuário vê (é o "filho" do gesto)
-            child: const UserAccountsDrawerHeader(
-              accountName: Text(
+            child: UserAccountsDrawerHeader(
+              accountName: const Text(
                 "Baderna App",
                 style: TextStyle(color: Colors.white, fontSize: 18),
               ),
-              accountEmail: Text(
+              accountEmail: const Text(
                 "Conhecimento Medicinal",
                 style: TextStyle(color: Colors.white70),
               ),
               currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Text(
-                  "B",
-                  style: TextStyle(fontSize: 40.0, color: Colors.green),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Image.asset("icons/icon.png"),
                 ),
               ),
               decoration: BoxDecoration(color: Colors.green),
