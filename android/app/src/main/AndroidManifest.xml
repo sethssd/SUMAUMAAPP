@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="baderna_apk"
+        android:label="Sumaúma App"
     android:name="${applicationName}"
     android:icon="@mipmap/launcher_icon"
     android:usesCleartextTraffic="true">
