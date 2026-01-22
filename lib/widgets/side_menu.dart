@@ -125,7 +125,7 @@ class _SideMenuState extends State<SideMenu> {
             // 4. O cabeçalho que o usuário vê (é o "filho" do gesto)
             child: UserAccountsDrawerHeader(
               accountName: const Text(
-                "Baderna App",
+                "Sumaúma App",
                 style: TextStyle(color: Colors.white, fontSize: 18),
               ),
               accountEmail: const Text(
