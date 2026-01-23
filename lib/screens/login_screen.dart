@@ -63,10 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Aviso'),
         content: const Text(
-          'Login com Google não está disponível no momento.\n\n'
-          'Para ativar, execute os passos de configuração:\n'
-          '1. Adicione SHA-1 do seu projeto no Firebase Console\n'
-          '2. Configure URLs de redirecionamento no Google Cloud',
+          'Login com Google não está disponível no momento.',
         ),
         actions: [
           TextButton(
