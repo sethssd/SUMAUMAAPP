@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
 
@@ -22,18 +21,19 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         password: _passwordController.text.trim(),
       );
 
-      // 2. MUDANÇA AQUI:
+      // 2. alterações
       //    Se o login deu certo, APENAS fechamos a tela de login.
       if (mounted) {
-        Navigator.pop(context); // Fecha a tela de login e volta para a HomeScreen
+        Navigator.pop(
+          context,
+        ); // Fecha a tela de login e volta para a HomeScreen
       }
-
     } on FirebaseAuthException catch (e) {
       // Mostra um erro se a senha/email estiver errado
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro de Admin: ${e.message}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro de Admin: ${e.message}')));
       }
     }
   }
@@ -64,11 +64,16 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               obscureText: true,
             ),
             const SizedBox(height: 20),
+<<<<<<< Updated upstream
             ElevatedButton(
               onPressed: signInAdmin,
               child: const Text("Entrar"),
             ),
             // NÃO HÁ BOTÃO DE "CRIAR CONTA" ainda.
+=======
+            ElevatedButton(onPressed: signInAdmin, child: const Text("Entrar")),
+            // NÃO HÁ BOTÃO DE "CRIAR CONTA"
+>>>>>>> Stashed changes
           ],
         ),
       ),

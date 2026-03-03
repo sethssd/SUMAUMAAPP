@@ -32,7 +32,7 @@ class AuthService {
       return AppConstants.statusErro;
     }
   }
-  
+
   String? getCurrentUserId() {
     return _auth.currentUser?.uid;
   }

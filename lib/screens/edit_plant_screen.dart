@@ -16,7 +16,6 @@ class EditPlantScreen extends StatefulWidget {
 }
 
 class _EditPlantScreenState extends State<EditPlantScreen> {
-
   final _nomeController = TextEditingController();
   final _nomeCientificoController = TextEditingController();
   final _descricaoCurtaController = TextEditingController();
@@ -35,28 +34,26 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _isEditing = false;
-  
+
   // 2. NOVAS VARIÁVEIS DE ESTADO
   bool _isUploadingImage = false;
   bool _isUploadingModel = false;
 
   // 3. INICIALIZAR O CLOUDINARY
   final cloudinary = CloudinaryPublic(
-    '***REMOVED***',     
-    '***REMOVED***',  
-    cache: false
+    '***REMOVED***',
+    '***REMOVED***',
+    cache: false,
   );
 
   @override
   void initState() {
-    
     super.initState();
     if (widget.plantaId != null) {
       _isEditing = true;
       _loadPlantaData();
     }
   }
-
 
   String _parseListFieldToString(dynamic data) {
     if (data is List) {
@@ -75,23 +72,28 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
           .collection('plantas')
           .doc(widget.plantaId!)
           .get();
-      
+
       if (plantaData.exists) {
         final data = plantaData.data() as Map<String, dynamic>;
-        
+
         _nomeController.text = data['nome'] ?? '';
         _nomeCientificoController.text = data['nomeCientifico'] ?? '';
         _descricaoCurtaController.text = data['descricaoCurta'] ?? '';
         _imagemUrlController.text = data['imagemUrl'] ?? '';
         _modelo3dUrlController.text = data['modelo3dUrl'] ?? '';
         _taxonomiaController.text = data['taxonomiaNomesPopulares'] ?? '';
-        _descricaoController.text = data['descricao'] ?? data['descricaoCompleta'] ?? '';
+        _descricaoController.text =
+            data['descricao'] ?? data['descricaoCompleta'] ?? '';
         _distribuicaoHabitatController.text = data['distribuicaoHabitat'] ?? '';
         _fenologiaController.text = data['fenologia'] ?? '';
         _usosValorEconomicoController.text = data['usosEValorEconomico'] ?? '';
         _farmacologiaController.text = data['farmacologia'] ?? '';
-        _referenciasFarmacologicasController.text = _parseListFieldToString(data['referenciasFarmacologicas']);
-        _referenciaGeralController.text = _parseListFieldToString(data['referenciaGeral']);
+        _referenciasFarmacologicasController.text = _parseListFieldToString(
+          data['referenciasFarmacologicas'],
+        );
+        _referenciaGeralController.text = _parseListFieldToString(
+          data['referenciaGeral'],
+        );
         _keywordsController.text = _parseListFieldToString(data['keywords']);
       }
     } catch (e) {
@@ -100,33 +102,37 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
     setState(() => _isLoading = false);
   }
 
-  // 4. NOVA FUNÇÃO: UPLOAD DE IMAGEM 2D
+  // 4. FUNÇÃO: UPLOAD DE IMAGEM 2D
   Future<void> _pickAndUploadImage() async {
     setState(() => _isUploadingImage = true);
     try {
-      final XFile? image = await ImagePicker().pickImage(source: ImageSource.gallery);
+      final XFile? image = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+      );
       if (image == null) {
         setState(() => _isUploadingImage = false);
         return;
       }
 
       CloudinaryResponse response = await cloudinary.uploadFile(
-        CloudinaryFile.fromFile(image.path, resourceType: CloudinaryResourceType.Image),
+        CloudinaryFile.fromFile(
+          image.path,
+          resourceType: CloudinaryResourceType.Image,
+        ),
       );
-      
+
       // Preenche o campo de texto com a nova URL
       setState(() {
         _imagemUrlController.text = response.secureUrl;
         _isUploadingImage = false;
       });
-
     } catch (e) {
       setState(() => _isUploadingImage = false);
       debugPrint("Erro no upload da imagem: $e");
     }
   }
 
-  // 5. NOVA FUNÇÃO: UPLOAD DE MODELO 3D (.GLB)
+  // 5. UPLOAD DE MODELO 3D (.GLB)
   Future<void> _pickAndUploadModel() async {
     setState(() => _isUploadingModel = true);
     try {
@@ -138,12 +144,12 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
         setState(() => _isUploadingModel = false);
         return;
       }
-      
+
       File file = File(result.files.single.path!);
 
       CloudinaryResponse response = await cloudinary.uploadFile(
         CloudinaryFile.fromFile(
-          file.path, 
+          file.path,
           resourceType: CloudinaryResourceType.Raw, // .glb é um arquivo "Raw"
         ),
       );
@@ -152,14 +158,13 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
         _modelo3dUrlController.text = response.secureUrl;
         _isUploadingModel = false;
       });
-
     } catch (e) {
       setState(() => _isUploadingModel = false);
       debugPrint("Erro no upload do modelo: $e");
     }
   }
 
-  // 6. ATUALIZAÇÃO PEQUENA: _savePlanta
+  // 6.  _savePlanta
   Future<void> _savePlanta() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
@@ -169,8 +174,9 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
         .map((e) => e.trim().toLowerCase())
         .where((e) => e.isNotEmpty)
         .toList();
-    
-    if (_nomeController.text.isNotEmpty && !keywords.contains(_nomeController.text.toLowerCase())) {
+
+    if (_nomeController.text.isNotEmpty &&
+        !keywords.contains(_nomeController.text.toLowerCase())) {
       keywords.add(_nomeController.text.toLowerCase());
     }
 
@@ -186,8 +192,14 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       'fenologia': _fenologiaController.text,
       'usosEValorEconomico': _usosValorEconomicoController.text,
       'farmacologia': _farmacologiaController.text,
-      'referenciasFarmacologicas': _referenciasFarmacologicasController.text.split(',').map((e) => e.trim()).toList(),
-      'referenciaGeral': _referenciaGeralController.text.split(',').map((e) => e.trim()).toList(),
+      'referenciasFarmacologicas': _referenciasFarmacologicasController.text
+          .split(',')
+          .map((e) => e.trim())
+          .toList(),
+      'referenciaGeral': _referenciaGeralController.text
+          .split(',')
+          .map((e) => e.trim())
+          .toList(),
       'keywords': keywords,
     };
 
@@ -204,7 +216,10 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Planta salva com sucesso!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Planta salva com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context);
       }
@@ -212,7 +227,10 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao salvar: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Erro ao salvar: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -242,20 +260,29 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                     TextFormField(
                       controller: _nomeController,
                       decoration: const InputDecoration(labelText: 'Nome'),
-                      validator: (value) => (value == null || value.isEmpty) ? 'Campo obrigatório' : null,
+                      validator: (value) => (value == null || value.isEmpty)
+                          ? 'Campo obrigatório'
+                          : null,
                     ),
                     TextFormField(
                       controller: _keywordsController,
-                      decoration: const InputDecoration(labelText: 'Palavras-chave (açaí, boldo, etc.)', helperText: 'Separar por vírgula'),
+                      decoration: const InputDecoration(
+                        labelText: 'Palavras-chave (açaí, boldo, etc.)',
+                        helperText: 'Separar por vírgula',
+                      ),
                       maxLines: 2,
                     ),
                     TextFormField(
                       controller: _nomeCientificoController,
-                      decoration: const InputDecoration(labelText: 'Nome Científico'),
+                      decoration: const InputDecoration(
+                        labelText: 'Nome Científico',
+                      ),
                     ),
                     TextFormField(
                       controller: _descricaoCurtaController,
-                      decoration: const InputDecoration(labelText: 'Descrição Curta (para lista)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Descrição Curta (para lista)',
+                      ),
                     ),
 
                     // CAMPO DE UPLOAD DE IMAGEM 2D
@@ -265,13 +292,19 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                         labelText: 'URL da Imagem 2D',
                         // Ícone de Upload
                         suffixIcon: _isUploadingImage
-                          ? const Padding(padding: EdgeInsets.all(10.0), child: CircularProgressIndicator(strokeWidth: 2))
-                          : IconButton(
-                              icon: const Icon(Icons.upload_file),
-                              onPressed: _pickAndUploadImage,
-                            ),
+                            ? const Padding(
+                                padding: EdgeInsets.all(10.0),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.upload_file),
+                                onPressed: _pickAndUploadImage,
+                              ),
                       ),
-                      readOnly: _isUploadingImage, // Trava o campo durante o upload
+                      readOnly:
+                          _isUploadingImage, // Trava o campo durante o upload
                     ),
 
                     // CAMPO DE UPLOAD DE MODELO 3D
@@ -281,11 +314,16 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                         labelText: 'URL do Modelo 3D (.glb)',
                         // Ícone de Upload
                         suffixIcon: _isUploadingModel
-                          ? const Padding(padding: EdgeInsets.all(10.0), child: CircularProgressIndicator(strokeWidth: 2))
-                          : IconButton(
-                              icon: const Icon(Icons.upload_file),
-                              onPressed: _pickAndUploadModel,
-                            ),
+                            ? const Padding(
+                                padding: EdgeInsets.all(10.0),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.upload_file),
+                                onPressed: _pickAndUploadModel,
+                              ),
                       ),
                       readOnly: _isUploadingModel,
                     ),
@@ -294,7 +332,9 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                     // ... (resto dos campos de texto)
                     TextFormField(
                       controller: _taxonomiaController,
-                      decoration: const InputDecoration(labelText: 'Taxonomia e nomes populares'),
+                      decoration: const InputDecoration(
+                        labelText: 'Taxonomia e nomes populares',
+                      ),
                       maxLines: 3,
                     ),
                     // ... (etc.)
@@ -305,7 +345,9 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                     ),
                     TextFormField(
                       controller: _distribuicaoHabitatController,
-                      decoration: const InputDecoration(labelText: 'Distribuição e habitat'),
+                      decoration: const InputDecoration(
+                        labelText: 'Distribuição e habitat',
+                      ),
                       maxLines: 3,
                     ),
                     TextFormField(
@@ -315,22 +357,31 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                     ),
                     TextFormField(
                       controller: _usosValorEconomicoController,
-                      decoration: const InputDecoration(labelText: 'Usos e valor econômico'),
+                      decoration: const InputDecoration(
+                        labelText: 'Usos e valor econômico',
+                      ),
                       maxLines: 3,
                     ),
                     TextFormField(
                       controller: _farmacologiaController,
-                      decoration: const InputDecoration(labelText: 'Farmacologia'),
+                      decoration: const InputDecoration(
+                        labelText: 'Farmacologia',
+                      ),
                       maxLines: 5,
                     ),
                     TextFormField(
                       controller: _referenciasFarmacologicasController,
-                      decoration: const InputDecoration(labelText: 'Referências farmacológicas (separadas por vírgula)'),
+                      decoration: const InputDecoration(
+                        labelText:
+                            'Referências farmacológicas (separadas por vírgula)',
+                      ),
                       maxLines: 5,
                     ),
                     TextFormField(
                       controller: _referenciaGeralController,
-                      decoration: const InputDecoration(labelText: 'Referência geral (separadas por vírgula)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Referência geral (separadas por vírgula)',
+                      ),
                       maxLines: 5,
                     ),
                   ],

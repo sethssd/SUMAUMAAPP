@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'detail_screen.dart';
 import '../widgets/side_menu.dart';
-import '../widgets/plant_search_delegate.dart'; 
+import '../widgets/plant_search_delegate.dart';
 
+// necessita de mais atenção, melhorar padroes de busca e otimizar codigos
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -18,10 +19,7 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.search),
             onPressed: () {
               // 2. CHAMADA A FUNÇÃO DE BUSCA
-              showSearch(
-                context: context,
-                delegate: PlantSearchDelegate(),
-              );
+              showSearch(context: context, delegate: PlantSearchDelegate());
             },
           ),
         ],
@@ -64,7 +62,11 @@ class HomeScreen extends StatelessWidget {
                           height: 60,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
-                            const Icon(Icons.image_not_supported, size: 60, color: Colors.grey),
+                              const Icon(
+                                Icons.image_not_supported,
+                                size: 60,
+                                color: Colors.grey,
+                              ),
                         ),
                         if (hasModel3D)
                           Positioned(
