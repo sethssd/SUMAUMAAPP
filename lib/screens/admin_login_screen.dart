@@ -68,7 +68,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               onPressed: signInAdmin,
               child: const Text("Entrar"),
             ),
-            // NÃO HÁ BOTÃO DE "CRIAR CONTA"
+            // NÃO HÁ BOTÃO DE "CRIAR CONTA" ainda.
           ],
         ),
       ),
