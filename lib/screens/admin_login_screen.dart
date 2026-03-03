@@ -64,16 +64,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               obscureText: true,
             ),
             const SizedBox(height: 20),
-<<<<<<< Updated upstream
-            ElevatedButton(
-              onPressed: signInAdmin,
-              child: const Text("Entrar"),
-            ),
-            // NÃO HÁ BOTÃO DE "CRIAR CONTA" ainda.
-=======
             ElevatedButton(onPressed: signInAdmin, child: const Text("Entrar")),
-            // NÃO HÁ BOTÃO DE "CRIAR CONTA"
->>>>>>> Stashed changes
+            // NÃO HÁ BOTÃO DE "CRIAR CONTA" ainda.
           ],
         ),
       ),
