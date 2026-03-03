@@ -116,7 +116,7 @@ class _DetailScreenState extends State<DetailScreen>
     );
   }
 
-  // ==================== HEADER ====================
+  // HEADER
   Widget _buildPlantHeader(Map<String, dynamic> data) {
     final String imagemUrl = data['imagemUrl'] ?? '';
     final String modelo3dUrl = data['modelo3dUrl'] ?? '';
@@ -160,7 +160,7 @@ class _DetailScreenState extends State<DetailScreen>
     }
   }
 
-  // ==================== ABA GERAL ====================
+  // ABA GERAL
   Widget _buildGeralTab(Map<String, dynamic> data) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -335,7 +335,7 @@ class _DetailScreenState extends State<DetailScreen>
     );
   }
 
-  // ==================== ABA CIENTÍFICA ====================
+  // ABA CIENTÍFICA
   Widget _buildCientificoTab(Map<String, dynamic> data) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -626,7 +626,7 @@ class _DetailScreenState extends State<DetailScreen>
     );
   }
 
-  // ==================== ABA REFERÊNCIAS ====================
+  //  ABA REFERÊNCIAS
   Widget _buildReferenciasTab(Map<String, dynamic> data) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -844,7 +844,7 @@ class _DetailScreenState extends State<DetailScreen>
     );
   }
 
-  // ==================== WIDGET AUXILIAR ====================
+  //  WIDGET AUXILIAR
   Widget _buildSectionCard({
     required IconData icon,
     required String title,
@@ -892,7 +892,7 @@ class _DetailScreenState extends State<DetailScreen>
     );
   }
 
-  // ==================== BUILD PRINCIPAL ====================
+  //  BUILD PRINCIPAL
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -991,7 +991,7 @@ class _DetailScreenState extends State<DetailScreen>
   }
 }
 
-// ==================== DELEGATE PARA TABBAR ====================
+//  DELEGATE PARA TABBAR
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   final TabBar _tabBar;
 

@@ -59,7 +59,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
 
             // Botões do Painel
 
-            // MUDOU AQUI: Agora 'escritor' pode ver este botão
+            // 'escritor' pode ver este botão
             if (_userRole == AppConstants.roleEscritor ||
                 _userRole == AppConstants.roleSuperAdmin)
               ElevatedButton(

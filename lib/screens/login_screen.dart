@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// nao usado por enquanto, criado apenas para fins de otimização de tempo
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -18,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.pop(context);
   }
 
-  //Função de Login com E-mail 
+  //Função de Login com E-mail
   Future<void> signIn() async {
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
@@ -29,9 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       debugPrint("Erro no login: ${e.message}");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro no login: ${e.message}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro no login: ${e.message}')));
       }
     }
   }
@@ -54,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  //  Função de Login com GOOGLE 
+  //  Função de Login com GOOGLE
   Future<void> signInWithGoogle() async {
     // Google Sign-In (temporariamente desativado)
     // Funcionalidade reativada quando a integração estiver pronta
@@ -62,9 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Aviso'),
-        content: const Text(
-          'Login com Google não está disponível no momento.',
-        ),
+        content: const Text('Login com Google não está disponível no momento.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -75,12 +74,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        //  Botão de PULAR 
+        //  Botão de PULAR
         leading: TextButton(
           onPressed: skipLogin,
           child: const Text(
@@ -96,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            //  Botão LOGIN COM GOOGLE 
+            //  Botão LOGIN COM GOOGLE
             ElevatedButton.icon(
               icon: const Icon(Icons.g_mobiledata, size: 28), // Ícone do Google
               label: const Text("Entrar com Google"),
@@ -130,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: signIn,
               child: const Text("Entrar com E-mail"),
             ),
-            
+
             // Botão de Criar Conta
             TextButton(
               onPressed: signUp,

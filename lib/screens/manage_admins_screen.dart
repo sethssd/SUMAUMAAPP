@@ -30,20 +30,26 @@ class _ManageAdminsScreenState extends State<ManageAdminsScreen> {
       // Feedback visual: mostra um SnackBar informando que a operação deu certo
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Usuário atualizado para $newRole'), backgroundColor: Colors.green),
+          SnackBar(
+            content: Text('Usuário atualizado para $newRole'),
+            backgroundColor: Colors.green,
+          ),
         );
       }
     } catch (e) {
       // Em caso de erro, mostra SnackBar com a mensagem
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao atualizar: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Erro ao atualizar: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
   }
 
-  // DIÁLOGO: Permite escolher o novo cargo para um usuário existente
+  // Permite escolher o novo cargo para um usuário existente
   // Bloqueamos alterações para 'super_admin' por segurança.
   void _showRoleDialog(String uid, String email, String currentRole) {
     if (currentRole == 'super_admin') {
@@ -82,7 +88,7 @@ class _ManageAdminsScreenState extends State<ManageAdminsScreen> {
     );
   }
 
-  // DIÁLOGO: Cria um novo usuário com cargo 'escritor'
+  // Cria um novo usuário com cargo 'escritor'
   // Este fluxo cria primeiro a conta no FirebaseAuth e, se bem sucedido,
   // escreve um documento na coleção 'users' com o campo 'role'.
   void _showCreateWriterDialog() {
@@ -109,14 +115,19 @@ class _ManageAdminsScreenState extends State<ManageAdminsScreen> {
                     TextFormField(
                       controller: emailController,
                       decoration: const InputDecoration(labelText: "E-mail"),
-                      validator: (value) => (value == null || !value.contains('@')) ? 'E-mail inválido' : null,
+                      validator: (value) =>
+                          (value == null || !value.contains('@'))
+                          ? 'E-mail inválido'
+                          : null,
                     ),
                     // Campo de senha com validação mínima (6 caracteres)
                     TextFormField(
                       controller: passwordController,
                       decoration: const InputDecoration(labelText: "Senha"),
                       obscureText: true,
-                      validator: (value) => (value == null || value.length < 6) ? 'Senha muito curta (mín. 6)' : null,
+                      validator: (value) => (value == null || value.length < 6)
+                          ? 'Senha muito curta (mín. 6)'
+                          : null,
                     ),
                   ],
                 ),
@@ -128,47 +139,63 @@ class _ManageAdminsScreenState extends State<ManageAdminsScreen> {
                 ),
                 ElevatedButton(
                   // Quando pressionado, valida e cria o usuário
-                  onPressed: isLoading ? null : () {
-                    if (!formKey.currentState!.validate()) return;
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          if (!formKey.currentState!.validate()) return;
 
-                    // Captura referências de Navigator e ScaffoldMessenger ANTES de qualquer await
-                    final navigator = Navigator.of(context);
-                    final messenger = ScaffoldMessenger.of(context);
+                          // Captura referências de Navigator e ScaffoldMessenger ANTES de qualquer await
+                          final navigator = Navigator.of(context);
+                          final messenger = ScaffoldMessenger.of(context);
 
-                    setDialogState(() => isLoading = true);
+                          setDialogState(() => isLoading = true);
 
-                    // Executa a lógica assíncrona em um future separado para evitar usar
-                    // o BuildContext após um 'await' (evita warnings do analyzer).
-                    Future(() async {
-                      try {
-                        // 1) Cria o usuário no Firebase Authentication
-                        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-                          email: emailController.text.trim(),
-                          password: passwordController.text.trim(),
-                        );
+                          // Executa a lógica assíncrona em um future separado para evitar usar
+                          // o BuildContext após um 'await' (evita warnings do analyzer).
+                          Future(() async {
+                            try {
+                              // 1) Cria o usuário no Firebase Authentication
+                              UserCredential userCredential = await FirebaseAuth
+                                  .instance
+                                  .createUserWithEmailAndPassword(
+                                    email: emailController.text.trim(),
+                                    password: passwordController.text.trim(),
+                                  );
 
-                        // 2) Se a criação de Auth funcionou, salva o documento no Firestore
-                        if (userCredential.user != null) {
-                          await usersCollection.doc(userCredential.user!.uid).set({
-                            'email': emailController.text.trim(),
-                            'role': 'escritor', // define o cargo como 'escritor'
-                          });
-                        }
+                              // 2) Se a criação de Auth funcionou, salva o documento no Firestore
+                              if (userCredential.user != null) {
+                                await usersCollection
+                                    .doc(userCredential.user!.uid)
+                                    .set({
+                                      'email': emailController.text.trim(),
+                                      'role':
+                                          'escritor', // define o cargo como 'escritor'
+                                    });
+                              }
 
-                        // Fecha o diálogo e informa sucesso (Lista é atualizada automaticamente pelo StreamBuilder)
-                        navigator.pop();
-                      } on FirebaseAuthException catch (e) {
-                        // Em caso de erro (ex.: e-mail já em uso), mostra SnackBar explicando o problema
-                        messenger.showSnackBar(
-                          SnackBar(content: Text('Erro: ${e.message}'), backgroundColor: Colors.red),
-                        );
-                      } finally {
-                        // Sempre reativa o botão do diálogo
-                        setDialogState(() => isLoading = false);
-                      }
-                    }).ignore();
-                  },
-                  child: isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text("Criar"),
+                              // Fecha o diálogo e informa sucesso (Lista é atualizada automaticamente pelo StreamBuilder)
+                              navigator.pop();
+                            } on FirebaseAuthException catch (e) {
+                              // Em caso de erro (ex.: e-mail já em uso), mostra SnackBar explicando o problema
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text('Erro: ${e.message}'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            } finally {
+                              // Sempre reativa o botão do diálogo
+                              setDialogState(() => isLoading = false);
+                            }
+                          }).ignore();
+                        },
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text("Criar"),
                 ),
               ],
             );
@@ -235,7 +262,9 @@ class _ManageAdminsScreenState extends State<ManageAdminsScreen> {
               // Mapeamento de ícones por cargo para dar indicação visual
               final leadingIcon = role == 'super_admin'
                   ? Icons.shield_sharp
-                  : (role == 'escritor' ? Icons.edit_note : Icons.person_outline);
+                  : (role == 'escritor'
+                        ? Icons.edit_note
+                        : Icons.person_outline);
 
               return ListTile(
                 title: Text(email),

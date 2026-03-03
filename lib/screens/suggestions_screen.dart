@@ -59,9 +59,7 @@ class _SuggestionsScreenState extends State<SuggestionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Enviar Sugestão"),
-      ),
+      appBar: AppBar(title: const Text("Enviar Sugestão")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -96,7 +94,10 @@ class _SuggestionsScreenState extends State<SuggestionsScreen> {
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Text("Enviar"),
               ),
