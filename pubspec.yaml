@@ -1,5 +1,5 @@
 name: baderna_apk
-description: "A new Flutter project."
+description: "SUMAÚMA — Enciclopédia de Plantas da Amazônia"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -43,6 +43,8 @@ dependencies:
   image_picker: ^1.2.1
   file_picker: ^10.3.6
   cloudinary_public: ^0.23.1
+  flutter_dotenv: ^5.2.1
+  flutter_widget_from_html: ^0.17.1
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +79,7 @@ flutter:
   assets:
   - assets/models/
   - icons/
+  - .env
     
 
   # An image asset can refer to one or more resolution-specific "variants", see

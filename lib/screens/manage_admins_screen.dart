@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class ManageAdminsScreen extends StatefulWidget {
@@ -88,114 +87,140 @@ class _ManageAdminsScreenState extends State<ManageAdminsScreen> {
     );
   }
 
-  // Cria um novo usuário com cargo 'escritor'
-  // Este fluxo cria primeiro a conta no FirebaseAuth e, se bem sucedido,
-  // escreve um documento na coleção 'users' com o campo 'role'.
-  void _showCreateWriterDialog() {
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    bool isLoading = false; // controle local dentro do diálogo
+  // Rótulos legíveis para cada cargo
+  static const _roleLabels = {
+    'usuario': 'Usuário (sem acesso admin)',
+    'escritor': 'Escritor (editar plantas)',
+    'admin': 'Admin (gerenciar usuários)',
+    'super_admin': 'Super Admin (acesso total)',
+  };
 
-    // showDialog + StatefulBuilder permite atualizar o estado do diálogo
-    // (por exemplo, mostrar spinner enquanto a operação assíncrona ocorre).
-    showDialog(
+  /// Abre um dialog para atribuir/alterar o cargo de um usuário já cadastrado.
+  /// O super admin vê todos os e-mails registrados e escolhe o cargo desejado.
+  Future<void> _showAssignRoleDialog() async {
+    // 1. Busca todos os usuários do Firestore (snapshot único, não stream)
+    final snapshot = await usersCollection.get();
+    if (!mounted) return;
+
+    if (snapshot.docs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nenhum usuário cadastrado ainda.')),
+      );
+      return;
+    }
+
+    // Monta lista de usuários: { uid, email, role }
+    final users = snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'uid': doc.id,
+        'email': data['email'] ?? doc.id,
+        'role': data['role'] ?? 'usuario',
+      };
+    }).toList()..sort((a, b) => (a['email']!).compareTo(b['email']!));
+
+    // Estado inicial do dialog
+    Map<String, dynamic> selectedUser = users.first;
+    String selectedRole = selectedUser['role'] as String;
+
+    await showDialog(
       context: context,
-      builder: (context) {
+      builder: (ctx) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
+          builder: (ctx, setDialogState) {
             return AlertDialog(
-              title: const Text("Criar Novo Escritor"),
-              content: Form(
-                key: formKey,
+              title: const Text('Atribuir Cargo'),
+              content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Campo de e-mail com validação simples
-                    TextFormField(
-                      controller: emailController,
-                      decoration: const InputDecoration(labelText: "E-mail"),
-                      validator: (value) =>
-                          (value == null || !value.contains('@'))
-                          ? 'E-mail inválido'
-                          : null,
+                    // ── Seleção de usuário ─────────────────
+                    const Text('Usuário', style: TextStyle(fontSize: 12)),
+                    const SizedBox(height: 4),
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      initialValue: selectedUser['uid'] as String?,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.person_outline),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      items: users.map((u) {
+                        return DropdownMenuItem<String>(
+                          value: u['uid'],
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                u['email']!,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              Text(
+                                'Atual: ${u['role']}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (uid) {
+                        final u = users.firstWhere((x) => x['uid'] == uid);
+                        setDialogState(() {
+                          selectedUser = u;
+                          selectedRole = u['role'] as String;
+                        });
+                      },
                     ),
-                    // Campo de senha com validação mínima (6 caracteres)
-                    TextFormField(
-                      controller: passwordController,
-                      decoration: const InputDecoration(labelText: "Senha"),
-                      obscureText: true,
-                      validator: (value) => (value == null || value.length < 6)
-                          ? 'Senha muito curta (mín. 6)'
-                          : null,
+                    const SizedBox(height: 16),
+
+                    // ── Seleção de cargo ───────────────────
+                    const Text('Cargo', style: TextStyle(fontSize: 12)),
+                    const SizedBox(height: 4),
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      initialValue: selectedRole,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.badge_outlined),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      items: _roleLabels.entries.map((e) {
+                        return DropdownMenuItem<String>(
+                          value: e.key,
+                          child: Text(
+                            e.value,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (v) =>
+                          setDialogState(() => selectedRole = v ?? 'usuario'),
                     ),
                   ],
                 ),
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancelar"),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancelar'),
                 ),
-                ElevatedButton(
-                  // Quando pressionado, valida e cria o usuário
-                  onPressed: isLoading
-                      ? null
-                      : () {
-                          if (!formKey.currentState!.validate()) return;
-
-                          // Captura referências de Navigator e ScaffoldMessenger ANTES de qualquer await
-                          final navigator = Navigator.of(context);
-                          final messenger = ScaffoldMessenger.of(context);
-
-                          setDialogState(() => isLoading = true);
-
-                          // Executa a lógica assíncrona em um future separado para evitar usar
-                          // o BuildContext após um 'await' (evita warnings do analyzer).
-                          Future(() async {
-                            try {
-                              // 1) Cria o usuário no Firebase Authentication
-                              UserCredential userCredential = await FirebaseAuth
-                                  .instance
-                                  .createUserWithEmailAndPassword(
-                                    email: emailController.text.trim(),
-                                    password: passwordController.text.trim(),
-                                  );
-
-                              // 2) Se a criação de Auth funcionou, salva o documento no Firestore
-                              if (userCredential.user != null) {
-                                await usersCollection
-                                    .doc(userCredential.user!.uid)
-                                    .set({
-                                      'email': emailController.text.trim(),
-                                      'role':
-                                          'escritor', // define o cargo como 'escritor'
-                                    });
-                              }
-
-                              // Fecha o diálogo e informa sucesso (Lista é atualizada automaticamente pelo StreamBuilder)
-                              navigator.pop();
-                            } on FirebaseAuthException catch (e) {
-                              // Em caso de erro (ex.: e-mail já em uso), mostra SnackBar explicando o problema
-                              messenger.showSnackBar(
-                                SnackBar(
-                                  content: Text('Erro: ${e.message}'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            } finally {
-                              // Sempre reativa o botão do diálogo
-                              setDialogState(() => isLoading = false);
-                            }
-                          }).ignore();
-                        },
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text("Criar"),
+                FilledButton.icon(
+                  icon: const Icon(Icons.check_rounded, size: 18),
+                  label: const Text('Salvar'),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _updateUserRole(selectedUser['uid']!, selectedRole);
+                  },
                 ),
               ],
             );
@@ -209,9 +234,9 @@ class _ManageAdminsScreenState extends State<ManageAdminsScreen> {
   Widget build(BuildContext context) {
     // Scaffold com AppBar e FloatingActionButton para criar novos escritores
     return Scaffold(
-      appBar: AppBar(title: const Text("Gerenciar Admins")),
+      appBar: AppBar(title: const Text('Gerenciar Admins')),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateWriterDialog,
+        onPressed: _showAssignRoleDialog,
         child: const Icon(Icons.add),
       ),
 

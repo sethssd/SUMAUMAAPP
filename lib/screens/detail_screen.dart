@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../utils/app_theme.dart';
 
 class DetailScreen extends StatefulWidget {
   final String plantaId;
@@ -62,17 +64,12 @@ class _DetailScreenState extends State<DetailScreen>
           SnackBar(content: Text('Não foi possível abrir o link: $urlString')),
         );
       }
-      debugPrint('Não foi possível abrir o link: $urlString');
     }
   }
 
   List<String> _parseListField(dynamic data) {
-    if (data is List) {
-      return data.map((item) => item.toString()).toList();
-    }
-    if (data is String) {
-      return data.split(',').map((e) => e.trim()).toList();
-    }
+    if (data is List) return data.map((item) => item.toString()).toList();
+    if (data is String) return data.split(',').map((e) => e.trim()).toList();
     return [];
   }
 
@@ -105,9 +102,7 @@ class _DetailScreenState extends State<DetailScreen>
   void _copyReference(Map<String, dynamic> ref) {
     final citation =
         "${ref['autores'] ?? 'Autores desconhecidos'}. ${ref['titulo'] ?? 'Sem título'}. ${ref['ano'] ?? ''}.";
-
     Clipboard.setData(ClipboardData(text: citation));
-
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Referência copiada para a área de transferência"),
@@ -116,358 +111,781 @@ class _DetailScreenState extends State<DetailScreen>
     );
   }
 
-  // HEADER
-  Widget _buildPlantHeader(Map<String, dynamic> data) {
+  // ══════════════════════════════════════════════════════════════
+  //  HERO IMAGE CARD — imagem arredondada no topo
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildHeroImageCard(Map<String, dynamic> data) {
     final String imagemUrl = data['imagemUrl'] ?? '';
-    final String modelo3dUrl = data['modelo3dUrl'] ?? '';
-    final String nome = data['nome'] ?? 'Nome Desconhecido';
-    final bool hasModel3D = modelo3dUrl.isNotEmpty;
 
-    if (hasModel3D) {
-      return Container(
-        height: 300,
-        color: Colors.grey[200],
-        child: ModelViewer(
-          src: modelo3dUrl,
-          ar: false,
-          alt: nome,
-          cameraControls: true,
-          autoRotate: true,
-        ),
-      );
-    } else {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.network(
-            imagemUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => const Center(
-              child: Icon(Icons.image_not_supported, color: Colors.grey),
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black.withAlpha(179)],
-              ),
-            ),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      height: 260,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
-      );
-    }
-  }
-
-  // ABA GERAL
-  Widget _buildGeralTab(Map<String, dynamic> data) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildWhatIsCard(data),
-          const SizedBox(height: 16),
-          _buildBenefitsCard(data),
-          const SizedBox(height: 16),
-          _buildUsageCard(data),
-          const SizedBox(height: 16),
-          _buildWarningsCard(data),
-          const SizedBox(height: 16),
-          _buildEvidenceCard(data),
-          const SizedBox(height: 50),
-        ],
       ),
-    );
-  }
-
-  Widget _buildWhatIsCard(Map<String, dynamic> data) {
-    final String descricaoSimples =
-        data['descricaoSimples'] ??
-        data['descricaoCurta'] ??
-        data['descricao'] ??
-        'Descrição não disponível';
-
-    return _buildSectionCard(
-      icon: Icons.lightbulb_outline,
-      title: "O QUE É?",
-      content: descricaoSimples,
-      color: Colors.blue[50]!,
-    );
-  }
-
-  Widget _buildBenefitsCard(Map<String, dynamic> data) {
-    final beneficios = _parseListField(data['beneficios']);
-
-    if (beneficios.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return _buildSectionCard(
-      icon: Icons.medical_services_outlined,
-      title: "PARA QUE SERVE?",
-      color: Colors.green[50]!,
-      customContent: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: beneficios.map((beneficio) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.check_circle, color: Colors.green[700], size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(beneficio, style: const TextStyle(fontSize: 16)),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildUsageCard(Map<String, dynamic> data) {
-    final String comoUsar = data['comoUsar'] ?? '';
-
-    if (comoUsar.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return _buildSectionCard(
-      icon: Icons.restaurant_outlined,
-      title: "COMO USAR?",
-      content: comoUsar,
-      color: Colors.orange[50]!,
-    );
-  }
-
-  Widget _buildWarningsCard(Map<String, dynamic> data) {
-    final cuidados = _parseListField(data['cuidados']);
-
-    if (cuidados.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return _buildSectionCard(
-      icon: Icons.warning_amber_outlined,
-      title: "CUIDADOS",
-      color: Colors.red[50]!,
-      customContent: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: cuidados.map((cuidado) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.info_outline, color: Colors.red[700], size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(cuidado, style: const TextStyle(fontSize: 16)),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildEvidenceCard(Map<String, dynamic> data) {
-    final nivelEvidencia = data['nivelEvidencia'] ?? 3;
-    final numeroEstudos = data['numeroEstudos'] ?? 0;
-
-    return Card(
-      color: Colors.amber[50],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.bar_chart, color: Colors.amber[800]),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "NÍVEL DE EVIDÊNCIA CIENTÍFICA",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.amber[900],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: imagemUrl.isNotEmpty
+            ? Image.network(
+                imagemUrl,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: Center(
+                    child: Icon(
+                      Icons.eco_rounded,
+                      size: 80,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.3),
                     ),
                   ),
                 ),
-              ],
+              )
+            : Container(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: Center(
+                  child: Icon(
+                    Icons.eco_rounded,
+                    size: 80,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  INFO HEADER — Nome, nome científico, descrição curta
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildInfoHeader(Map<String, dynamic> data) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final String nome = data['nome'] ?? 'Nome desconhecido';
+    final String nomeCientifico = data['nomeCientifico'] ?? '';
+    final String descricaoCurta =
+        data['descricaoCurta'] ?? data['descricao'] ?? '';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            nome,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+              letterSpacing: -0.5,
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: List.generate(5, (index) {
-                return Icon(
-                  index < nivelEvidencia ? Icons.star : Icons.star_border,
-                  color: Colors.amber[700],
-                  size: 32,
-                );
-              }),
-            ),
-            const SizedBox(height: 8),
+          ),
+          if (nomeCientifico.isNotEmpty) ...[
+            const SizedBox(height: 4),
             Text(
-              _getEvidenceLevelText(nivelEvidencia),
+              nomeCientifico,
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.amber[900],
+                fontSize: 17,
+                fontStyle: FontStyle.italic,
+                color: SumaColors.greenBright,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            if (numeroEstudos > 0) ...[
-              const SizedBox(height: 4),
-              Text(
-                "Baseado em $numeroEstudos estudos científicos",
-                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+          ],
+          if (descricaoCurta.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              descricaoCurta,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.7)
+                    : const Color(0xFF1A1A2E).withValues(alpha: 0.7),
               ),
-            ],
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  PREMIUM TAB BAR
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildPremiumTabBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.06)
+            : SumaColors.greenLight.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          color: isDark ? SumaColors.darkSurface : Colors.white,
+          borderRadius: BorderRadius.circular(11),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerColor: Colors.transparent,
+        labelColor: SumaColors.greenBright,
+        unselectedLabelColor: isDark
+            ? Colors.white.withValues(alpha: 0.5)
+            : SumaColors.greenMid.withValues(alpha: 0.6),
+        labelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.3,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+        tabs: const [
+          Tab(text: 'Geral'),
+          Tab(text: 'Científico'),
+          Tab(text: 'Referências'),
+        ],
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  PREMIUM CARD WRAPPER
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildPremiumCard({
+    required IconData icon,
+    required String title,
+    required Color accentColor,
+    String? content,
+    Widget? customContent,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isExpanded = _expandedTopics[title] ?? false;
+
+    // Header row (icon + title)
+    Widget headerRow = Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: isDark ? 0.15 : 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: accentColor, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.9)
+                  : const Color(0xFF1A1A2E),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    // When expanded, make header tappable to collapse
+    if (isExpanded && content != null) {
+      headerRow = GestureDetector(
+        onTap: () => _toggleExpansion(title),
+        behavior: HitTestBehavior.opaque,
+        child: headerRow,
+      );
+    }
+
+    Widget cardBody = Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? accentColor.withValues(alpha: 0.15)
+              : accentColor.withValues(alpha: 0.2),
+          width: 1,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: accentColor.withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            headerRow,
+            const SizedBox(height: 14),
+            if (content != null) _buildRichContent(content, expandKey: title),
+            if (customContent != null) customContent,
           ],
         ),
       ),
     );
-  }
 
-  // ABA CIENTÍFICA
-  Widget _buildCientificoTab(Map<String, dynamic> data) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildChemicalCompositionCard(data),
-          const SizedBox(height: 16),
-          _buildPharmacologicalPropertiesCard(data),
-          const SizedBox(height: 16),
-          _buildClinicalStudiesCard(data),
-          const SizedBox(height: 16),
-          _buildLegacyScientificContent(data),
-          const SizedBox(height: 50),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChemicalCompositionCard(Map<String, dynamic> data) {
-    final composicao = data['composicaoQuimica'] as Map<String, dynamic>?;
-
-    if (composicao == null || composicao.isEmpty) {
-      return const SizedBox.shrink();
+    // When collapsed, make entire card tappable to expand
+    if (!isExpanded && content != null) {
+      return GestureDetector(
+        onTap: () => _toggleExpansion(title),
+        behavior: HitTestBehavior.opaque,
+        child: cardBody,
+      );
     }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.science, color: Colors.purple[700]),
-                const SizedBox(width: 8),
-                Expanded(
+    return cardBody;
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  RICH CONTENT RENDERER with "Leia mais / Leia menos"
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildRichContent(String content, {String expandKey = ''}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark
+        ? Colors.white.withValues(alpha: 0.7)
+        : const Color(0xFF1A1A2E).withValues(alpha: 0.75);
+    final bool isExpanded = _expandedTopics[expandKey] ?? false;
+
+    // Detect if content contains HTML tags
+    final bool isHtml = RegExp(
+      r'<[a-z][\s\S]*>',
+      caseSensitive: false,
+    ).hasMatch(content);
+
+    final Widget fullContent = isHtml
+        ? HtmlWidget(
+            content,
+            textStyle: TextStyle(fontSize: 15, height: 1.6, color: textColor),
+          )
+        : Text(
+            content,
+            style: TextStyle(fontSize: 15, height: 1.6, color: textColor),
+          );
+
+    // If expanded, show full content + "Leia menos"
+    if (isExpanded) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          fullContent,
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () => _toggleExpansion(expandKey),
+            child: Text(
+              'Leia menos ▲',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: SumaColors.greenBright,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Collapsed: use LayoutBuilder to detect overflow
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // For plain text, we can measure lines directly
+        if (!isHtml) {
+          final textPainter = TextPainter(
+            text: TextSpan(
+              text: content,
+              style: TextStyle(fontSize: 15, height: 1.6, color: textColor),
+            ),
+            maxLines: 4,
+            textDirection: TextDirection.ltr,
+          )..layout(maxWidth: constraints.maxWidth);
+
+          final bool overflows = textPainter.didExceedMaxLines;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                content,
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 15, height: 1.6, color: textColor),
+              ),
+              if (overflows) ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => _toggleExpansion(expandKey),
                   child: Text(
-                    "COMPOSIÇÃO QUÍMICA",
+                    'Leia mais... ▼',
                     style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple[900],
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: SumaColors.greenBright,
                     ),
                   ),
                 ),
               ],
+            ],
+          );
+        }
+
+        // For HTML content: show clipped container with gradient fade
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRect(
+              child: SizedBox(
+                height: 96, // ~4 lines at 15px * 1.6 line-height
+                child: fullContent,
+              ),
             ),
-            const Divider(height: 24),
-            ...composicao.entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "• ",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.purple[700],
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Expanded(
-                      child: RichText(
-                        text: TextSpan(
-                          style: const TextStyle(
-                            fontSize: 15,
-                            color: Colors.black87,
-                          ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () => _toggleExpansion(expandKey),
+              child: Text(
+                'Leia mais... ▼',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: SumaColors.greenBright,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  3D MODEL BUTTON
+  // ══════════════════════════════════════════════════════════════
+  Widget _build3DButton(String modelo3dUrl, String nome) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      child: SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: ElevatedButton.icon(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    _ModelViewerPage(url: modelo3dUrl, nome: nome),
+              ),
+            );
+          },
+          icon: const Icon(Icons.view_in_ar_rounded, size: 22),
+          label: const Text(
+            'Ver Modelo 3D',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: SumaColors.greenBright,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            elevation: 4,
+            shadowColor: SumaColors.greenBright.withValues(alpha: 0.5),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  ABA GERAL
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildGeralTab(Map<String, dynamic> data) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final String descricao = data['descricao'] ?? '';
+    final String distribuicao = data['distribuicaoHabitat'] ?? '';
+    final String fenologia = data['fenologia'] ?? '';
+    final String usosValor = data['usosEValorEconomico'] ?? '';
+    final String taxonomia = data['taxonomiaNomesPopulares'] ?? '';
+
+    // Novos campos (se existirem)
+    final String descricaoSimples = data['descricaoSimples'] ?? '';
+    final beneficios = _parseListField(data['beneficios']);
+    final String comoUsar = data['comoUsar'] ?? '';
+    final cuidados = _parseListField(data['cuidados']);
+    final nivelEvidencia = data['nivelEvidencia'] ?? 0;
+    final numeroEstudos = data['numeroEstudos'] ?? 0;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // "O que é?" — se houver descrição simples
+          if (descricaoSimples.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.lightbulb_outline_rounded,
+              title: 'O QUE É?',
+              accentColor: Colors.blue,
+              content: descricaoSimples,
+            ),
+
+          // Descrição principal
+          if (descricao.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.article_rounded,
+              title: 'DESCRIÇÃO',
+              accentColor: SumaColors.greenBright,
+              content: descricao,
+            ),
+
+          // Distribuição e Habitat
+          if (distribuicao.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.map_rounded,
+              title: 'DISTRIBUIÇÃO E HABITAT',
+              accentColor: const Color(0xFF2D6A4F),
+              content: distribuicao,
+            ),
+
+          // Taxonomia / Nomes Populares
+          if (taxonomia.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.category_rounded,
+              title: 'TAXONOMIA / NOMES POPULARES',
+              accentColor: Colors.purple,
+              content: taxonomia,
+            ),
+
+          // Fenologia
+          if (fenologia.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.calendar_month_rounded,
+              title: 'FENOLOGIA',
+              accentColor: Colors.orange,
+              content: fenologia,
+            ),
+
+          // Usos e Valor Econômico
+          if (usosValor.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.storefront_rounded,
+              title: 'USOS E VALOR ECONÔMICO',
+              accentColor: Colors.teal,
+              content: usosValor,
+            ),
+
+          // Benefícios
+          if (beneficios.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.medical_services_outlined,
+              title: 'PARA QUE SERVE?',
+              accentColor: Colors.green,
+              customContent: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: beneficios
+                    .map(
+                      (b) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            TextSpan(
-                              text: "${_formatChemicalName(entry.key)}: ",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
+                            Icon(
+                              Icons.check_circle_rounded,
+                              color: Colors.green,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                b,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.75)
+                                      : const Color(
+                                          0xFF1A1A2E,
+                                        ).withValues(alpha: 0.75),
+                                ),
                               ),
                             ),
-                            TextSpan(text: entry.value.toString()),
                           ],
                         ),
                       ),
+                    )
+                    .toList(),
+              ),
+            ),
+
+          // Como usar
+          if (comoUsar.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.restaurant_outlined,
+              title: 'COMO USAR?',
+              accentColor: Colors.orange,
+              content: comoUsar,
+            ),
+
+          // Cuidados
+          if (cuidados.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.warning_amber_rounded,
+              title: 'CUIDADOS',
+              accentColor: Colors.red,
+              customContent: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: cuidados
+                    .map(
+                      (c) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.info_outline_rounded,
+                              color: Colors.red,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                c,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.75)
+                                      : const Color(
+                                          0xFF1A1A2E,
+                                        ).withValues(alpha: 0.75),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+
+          // Nível de Evidência
+          if (nivelEvidencia > 0)
+            _buildPremiumCard(
+              icon: Icons.bar_chart_rounded,
+              title: 'NÍVEL DE EVIDÊNCIA CIENTÍFICA',
+              accentColor: Colors.amber,
+              customContent: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: List.generate(5, (index) {
+                      return Icon(
+                        index < nivelEvidencia
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded,
+                        color: Colors.amber,
+                        size: 28,
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _getEvidenceLevelText(nivelEvidencia),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.amber.shade700,
+                    ),
+                  ),
+                  if (numeroEstudos > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Baseado em $numeroEstudos estudos científicos',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.5)
+                            : Colors.grey.shade600,
+                      ),
                     ),
                   ],
-                ),
-              );
-            }),
-          ],
-        ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
 
-  Widget _buildPharmacologicalPropertiesCard(Map<String, dynamic> data) {
+  // ══════════════════════════════════════════════════════════════
+  //  ABA CIENTÍFICA
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildCientificoTab(Map<String, dynamic> data) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final String farmacologia = data['farmacologia'] ?? '';
+    final composicao = data['composicaoQuimica'] as Map<String, dynamic>?;
     final propriedades = data['propriedadesFarmacologicas'] as List<dynamic>?;
+    final tiposEstudo = data['tiposEstudo'] as Map<String, dynamic>?;
 
-    if (propriedades == null || propriedades.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.biotech, color: Colors.teal[700]),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "PROPRIEDADES FARMACOLÓGICAS",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.teal[900],
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Composição Química
+          if (composicao != null && composicao.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.science_rounded,
+              title: 'COMPOSIÇÃO QUÍMICA',
+              accentColor: Colors.purple,
+              customContent: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: composicao.entries.map((entry) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '• ',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.purple,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.75)
+                                    : const Color(
+                                        0xFF1A1A2E,
+                                      ).withValues(alpha: 0.75),
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: '${_formatChemicalName(entry.key)}: ',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                TextSpan(text: entry.value.toString()),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-              ],
+                  );
+                }).toList(),
+              ),
             ),
-            const Divider(height: 24),
-            ...propriedades.map((prop) {
-              return _buildExpandableProperty(prop as Map<String, dynamic>);
-            }),
-          ],
-        ),
+
+          // Propriedades Farmacológicas
+          if (propriedades != null && propriedades.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.biotech_rounded,
+              title: 'PROPRIEDADES FARMACOLÓGICAS',
+              accentColor: Colors.teal,
+              customContent: Column(
+                children: propriedades.map((prop) {
+                  return _buildExpandableProperty(prop as Map<String, dynamic>);
+                }).toList(),
+              ),
+            ),
+
+          // Estudos Clínicos
+          if (tiposEstudo != null && tiposEstudo.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.analytics_rounded,
+              title: 'ESTUDOS CLÍNICOS',
+              accentColor: Colors.indigo,
+              customContent: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: tiposEstudo.entries.map((entry) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline_rounded,
+                          color: Colors.indigo,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${_formatChemicalName(entry.key)}: ${entry.value}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.75)
+                                  : const Color(
+                                      0xFF1A1A2E,
+                                    ).withValues(alpha: 0.75),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+          // Farmacologia (texto legado)
+          if (farmacologia.isNotEmpty)
+            _buildPremiumCard(
+              icon: Icons.description_rounded,
+              title: 'FARMACOLOGIA',
+              accentColor: SumaColors.greenBright,
+              content: farmacologia,
+            ),
+        ],
       ),
     );
   }
 
   Widget _buildExpandableProperty(Map<String, dynamic> property) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final tipo = property['tipo'] ?? 'Propriedade';
     final isExpanded = _expandedTopics[tipo] ?? false;
 
@@ -475,21 +893,28 @@ class _DetailScreenState extends State<DetailScreen>
       children: [
         InkWell(
           onTap: () => _toggleExpansion(tipo),
+          borderRadius: BorderRadius.circular(8),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
                 Icon(
-                  isExpanded ? Icons.expand_less : Icons.expand_more,
-                  color: Colors.teal[700],
+                  isExpanded
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded,
+                  color: Colors.teal,
+                  size: 20,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     tipo,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.85)
+                          : const Color(0xFF1A1A2E),
                     ),
                   ),
                 ),
@@ -499,21 +924,27 @@ class _DetailScreenState extends State<DetailScreen>
         ),
         if (isExpanded)
           Padding(
-            padding: const EdgeInsets.only(left: 32, bottom: 12),
+            padding: const EdgeInsets.only(left: 28, bottom: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (property['ic50'] != null)
                   Text(
-                    "IC50: ${property['ic50']}",
-                    style: const TextStyle(fontSize: 14),
+                    'IC50: ${property['ic50']}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.white70 : Colors.grey.shade700,
+                    ),
                   ),
                 if (property['mecanismo'] != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      "Mecanismo: ${property['mecanismo']}",
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                      'Mecanismo: ${property['mecanismo']}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white70 : Colors.grey.shade700,
+                      ),
                     ),
                   ),
                 if (property['detalhes'] != null)
@@ -521,122 +952,35 @@ class _DetailScreenState extends State<DetailScreen>
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
                       property['detalhes'],
-                      style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isDark ? Colors.white70 : Colors.grey.shade700,
+                      ),
                     ),
                   ),
               ],
             ),
           ),
-        const Divider(height: 8),
+        Divider(
+          height: 1,
+          color: isDark ? SumaColors.darkDivider : const Color(0xFFE0EDE4),
+        ),
       ],
     );
   }
 
-  Widget _buildClinicalStudiesCard(Map<String, dynamic> data) {
-    final tiposEstudo = data['tiposEstudo'] as Map<String, dynamic>?;
-
-    if (tiposEstudo == null || tiposEstudo.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Card(
-      color: Colors.indigo[50],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.analytics_outlined, color: Colors.indigo[700]),
-                const SizedBox(width: 8),
-                Text(
-                  "ESTUDOS CLÍNICOS",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.indigo[900],
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            ...tiposEstudo.entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle_outline,
-                      color: Colors.indigo[700],
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "${_formatChemicalName(entry.key)}: ${entry.value}",
-                        style: const TextStyle(fontSize: 15),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegacyScientificContent(Map<String, dynamic> data) {
-    final String farmacologia = data['farmacologia'] ?? '';
-
-    if (farmacologia.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.description_outlined, color: Colors.green[700]),
-                const SizedBox(width: 8),
-                Text(
-                  "FARMACOLOGIA (Detalhes)",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green[900],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              farmacologia,
-              style: const TextStyle(fontSize: 15, height: 1.5),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // ══════════════════════════════════════════════════════════════
   //  ABA REFERÊNCIAS
+  // ══════════════════════════════════════════════════════════════
   Widget _buildReferenciasTab(Map<String, dynamic> data) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildGeneralReferencesSection(data),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           _buildScientificReferencesSection(data),
-          const SizedBox(height: 50),
         ],
       ),
     );
@@ -648,53 +992,35 @@ class _DetailScreenState extends State<DetailScreen>
         .where((link) => link.trim().isNotEmpty)
         .toList();
 
-    if (validLinks.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (validLinks.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.menu_book, color: Colors.green[700]),
-            const SizedBox(width: 8),
-            Text(
-              "REFERÊNCIAS GERAIS (${validLinks.length})",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.green[900],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...validLinks.map((link) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: Icon(Icons.link, color: Colors.green[700]),
-              title: Text(
-                link.length > 50 ? '${link.substring(0, 50)}...' : link,
-                style: const TextStyle(fontSize: 14),
-              ),
-              trailing: const Icon(Icons.open_in_new, size: 18),
-              onTap: () => _launchURL(link),
-            ),
-          );
-        }),
-      ],
+    return _buildPremiumCard(
+      icon: Icons.menu_book_rounded,
+      title: 'REFERÊNCIAS GERAIS (${validLinks.length})',
+      accentColor: SumaColors.greenBright,
+      customContent: Column(
+        children: validLinks.map((link) {
+          return _buildReferenceLink(link, SumaColors.greenBright);
+        }).toList(),
+      ),
     );
   }
 
   Widget _buildScientificReferencesSection(Map<String, dynamic> data) {
-    // Tenta usar referências estruturadas primeiro
     final referenciasCientificas =
         data['referenciasCientificas'] as List<dynamic>?;
 
     if (referenciasCientificas != null && referenciasCientificas.isNotEmpty) {
-      return _buildStructuredReferences(referenciasCientificas);
+      return _buildPremiumCard(
+        icon: Icons.science_rounded,
+        title: 'REFERÊNCIAS CIENTÍFICAS (${referenciasCientificas.length})',
+        accentColor: Colors.blue,
+        customContent: Column(
+          children: referenciasCientificas.map((ref) {
+            return _buildScientificReferenceItem(ref as Map<String, dynamic>);
+          }).toList(),
+        ),
+      );
     }
 
     // Fallback para referências farmacológicas antigas
@@ -705,196 +1031,180 @@ class _DetailScreenState extends State<DetailScreen>
         .where((link) => link.trim().isNotEmpty)
         .toList();
 
-    if (validLinks.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (validLinks.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.science, color: Colors.blue[700]),
-            const SizedBox(width: 8),
-            Text(
-              "REFERÊNCIAS CIENTÍFICAS (${validLinks.length})",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[900],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...validLinks.map((link) {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: Icon(Icons.science_outlined, color: Colors.blue[700]),
-              title: Text(
-                link.length > 50 ? '${link.substring(0, 50)}...' : link,
-                style: const TextStyle(fontSize: 14),
-              ),
-              trailing: const Icon(Icons.open_in_new, size: 18),
-              onTap: () => _launchURL(link),
-            ),
-          );
-        }),
-      ],
+    return _buildPremiumCard(
+      icon: Icons.science_rounded,
+      title: 'REFERÊNCIAS CIENTÍFICAS (${validLinks.length})',
+      accentColor: Colors.blue,
+      customContent: Column(
+        children: validLinks.map((link) {
+          return _buildReferenceLink(link, Colors.blue);
+        }).toList(),
+      ),
     );
   }
 
-  Widget _buildStructuredReferences(List<dynamic> referencias) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.science, color: Colors.blue[700]),
-            const SizedBox(width: 8),
-            Text(
-              "REFERÊNCIAS CIENTÍFICAS (${referencias.length})",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[900],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ...referencias.map((ref) {
-          return _buildScientificReferenceCard(ref as Map<String, dynamic>);
-        }),
-      ],
-    );
-  }
+  Widget _buildReferenceLink(String link, Color color) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  Widget _buildScientificReferenceCard(Map<String, dynamic> ref) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              ref['titulo'] ?? 'Sem título',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              "${ref['autores'] ?? 'Autores desconhecidos'} • ${ref['ano'] ?? ''}",
-              style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-            ),
-            if (ref['pmid'] != null || ref['doi'] != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: InkWell(
+        onTap: () => _launchURL(link),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: isDark ? 0.08 : 0.05),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.link_rounded, color: color, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
                 child: Text(
-                  ref['pmid'] != null
-                      ? "PMID: ${ref['pmid']}"
-                      : "DOI: ${ref['doi']}",
+                  link.length > 55 ? '${link.substring(0, 55)}…' : link,
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.blue[700],
-                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    color: color,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-            if (ref['citacoes'] != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Row(
-                  children: [
-                    Icon(Icons.format_quote, size: 14, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Text(
-                      "${ref['citacoes']} citações",
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                if (ref['url'] != null)
-                  TextButton.icon(
-                    onPressed: () => _launchURL(ref['url'] ?? ''),
-                    icon: const Icon(Icons.open_in_new, size: 16),
-                    label: const Text("Abrir"),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                  ),
-                TextButton.icon(
-                  onPressed: () => _copyReference(ref),
-                  icon: const Icon(Icons.content_copy, size: 16),
-                  label: const Text("Citar"),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              Icon(Icons.open_in_new_rounded, color: color, size: 16),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  //  WIDGET AUXILIAR
-  Widget _buildSectionCard({
-    required IconData icon,
-    required String title,
-    required Color color,
-    String? content,
-    Widget? customContent,
-  }) {
-    return Card(
-      color: color,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildScientificReferenceItem(Map<String, dynamic> ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.blue.withValues(alpha: 0.06)
+            : Colors.blue.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.1), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            ref['titulo'] ?? 'Sem título',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.9)
+                  : const Color(0xFF1A1A2E),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "${ref['autores'] ?? 'Autores desconhecidos'} • ${ref['ano'] ?? ''}",
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.white54 : Colors.grey.shade600,
+            ),
+          ),
+          if (ref['pmid'] != null || ref['doi'] != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                ref['pmid'] != null
+                    ? 'PMID: ${ref['pmid']}'
+                    : 'DOI: ${ref['doi']}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.blue.shade400,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
+          if (ref['citacoes'] != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.format_quote_rounded,
+                    size: 13,
+                    color: Colors.grey.shade500,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${ref['citacoes']} citações',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              if (ref['url'] != null)
+                _buildMiniButton(
+                  Icons.open_in_new_rounded,
+                  'Abrir',
+                  () => _launchURL(ref['url'] ?? ''),
+                ),
+              const SizedBox(width: 8),
+              _buildMiniButton(
+                Icons.content_copy_rounded,
+                'Citar',
+                () => _copyReference(ref),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniButton(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: SumaColors.greenBright.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                Icon(
-                  icon,
-                  color: color.computeLuminance() > 0.5
-                      ? Colors.black87
-                      : Colors.white,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: color.computeLuminance() > 0.5
-                          ? Colors.black87
-                          : Colors.white,
-                    ),
-                  ),
-                ),
-              ],
+            Icon(icon, size: 14, color: SumaColors.greenBright),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: SumaColors.greenBright,
+              ),
             ),
-            const SizedBox(height: 12),
-            if (content != null)
-              Text(content, style: const TextStyle(fontSize: 15, height: 1.5)),
-            if (customContent != null) customContent,
           ],
         ),
       ),
     );
   }
 
+  // ══════════════════════════════════════════════════════════════
   //  BUILD PRINCIPAL
+  // ══════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(),
@@ -910,108 +1220,106 @@ class _DetailScreenState extends State<DetailScreen>
 
     final data = _plantaData!.data() as Map<String, dynamic>;
     final String nome = data['nome'] ?? 'Nome Desconhecido';
-    final String nomeCientifico = data['nomeCientifico'] ?? '';
+    final String modelo3dUrl = data['modelo3dUrl'] ?? '';
+    final bool hasModel3D = modelo3dUrl.isNotEmpty;
 
     return Scaffold(
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              expandedHeight: 300,
-              pinned: true,
-              flexibleSpace: FlexibleSpaceBar(
-                title: Text(
-                  nome,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        offset: Offset(0, 1),
-                        blurRadius: 3.0,
-                        color: Color.fromARGB(255, 0, 0, 0),
-                      ),
+      backgroundColor: isDark ? SumaColors.darkBg : const Color(0xFFF6FBF7),
+      body: Column(
+        children: [
+          // ── TOP SECTION (scrollável) ──
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                // AppBar transparente
+                SliverAppBar(
+                  expandedHeight: 0,
+                  pinned: true,
+                  backgroundColor: isDark
+                      ? SumaColors.darkBg
+                      : const Color(0xFFF6FBF7),
+                  foregroundColor: isDark ? Colors.white : SumaColors.greenDeep,
+                  iconTheme: IconThemeData(
+                    color: isDark ? Colors.white : SumaColors.greenDeep,
+                  ),
+                  elevation: 0,
+                  title: Text(
+                    nome,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : SumaColors.greenDeep,
+                    ),
+                  ),
+                  centerTitle: true,
+                ),
+
+                // Conteúdo Principal
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 8),
+                      // Imagem arredondada (Hero Card)
+                      _buildHeroImageCard(data),
+                      // Info: Nome, nome científico, descrição
+                      _buildInfoHeader(data),
+                      // Tab Bar Premium
+                      _buildPremiumTabBar(),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
-                background: _buildPlantHeader(data),
-              ),
-            ),
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _SliverAppBarDelegate(
-                TabBar(
-                  controller: _tabController,
-                  labelColor: Colors.green[800],
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: Colors.green,
-                  tabs: const [
-                    Tab(icon: Icon(Icons.person), text: "Geral"),
-                    Tab(icon: Icon(Icons.science), text: "Científico"),
-                    Tab(icon: Icon(Icons.menu_book), text: "Referências"),
-                  ],
-                ),
-              ),
-            ),
-          ];
-        },
-        body: Column(
-          children: [
-            if (nomeCientifico.isNotEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 16,
-                ),
-                color: Colors.grey[100],
-                child: Text(
-                  nomeCientifico,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontStyle: FontStyle.italic,
-                    color: Colors.grey,
+
+                // Tab Content
+                SliverFillRemaining(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildGeralTab(data),
+                      _buildCientificoTab(data),
+                      _buildReferenciasTab(data),
+                    ],
                   ),
-                  textAlign: TextAlign.center,
                 ),
-              ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildGeralTab(data),
-                  _buildCientificoTab(data),
-                  _buildReferenciasTab(data),
-                ],
+              ],
+            ),
+          ),
+
+          // ── BOTÃO 3D (fixo embaixo) ──
+          if (hasModel3D)
+            SafeArea(
+              top: false,
+              child: Container(
+                color: isDark ? SumaColors.darkBg : const Color(0xFFF6FBF7),
+                child: _build3DButton(modelo3dUrl, nome),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
 }
 
-//  DELEGATE PARA TABBAR
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar _tabBar;
+// ══════════════════════════════════════════════════════════════
+//  TELA DE VISUALIZAÇÃO 3D
+// ══════════════════════════════════════════════════════════════
+class _ModelViewerPage extends StatelessWidget {
+  final String url;
+  final String nome;
 
-  _SliverAppBarDelegate(this._tabBar);
-
-  @override
-  double get minExtent => _tabBar.preferredSize.height;
-
-  @override
-  double get maxExtent => _tabBar.preferredSize.height;
+  const _ModelViewerPage({required this.url, required this.nome});
 
   @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(color: Colors.white, child: _tabBar);
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(nome)),
+      body: ModelViewer(
+        src: url,
+        ar: true,
+        alt: nome,
+        cameraControls: true,
+        autoRotate: true,
+      ),
+    );
   }
-
-  @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
 }

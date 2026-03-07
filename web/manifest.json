@@ -1,11 +1,11 @@
 {
-    "name": "baderna_apk",
-    "short_name": "baderna_apk",
+    "name": "SUMAÚMA",
+    "short_name": "SUMAÚMA",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1B4332",
+    "theme_color": "#2D6A4F",
+    "description": "SUMAÚMA — Enciclopédia de Plantas da Amazônia",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
