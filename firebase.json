@@ -1,1 +1,46 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"badernaapk","appId":"1:***REMOVED***:android:c91457ae9e79ff9e29f0c3","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"badernaapk","configurations":{"android":"1:***REMOVED***:android:c91457ae9e79ff9e29f0c3","ios":"1:***REMOVED***:ios:496f9ec73a714ce629f0c3","macos":"1:***REMOVED***:ios:496f9ec73a714ce629f0c3","web":"***REMOVED***","windows":"1:***REMOVED***:web:25318807b8ccbbcf29f0c3"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": "web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/formulario",
+        "destination": "/formulario/index.html"
+      },
+      {
+        "source": "/admin",
+        "destination": "/admin/index.html"
+      }
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "badernaapk",
+          "appId": "1:***REMOVED***:android:c91457ae9e79ff9e29f0c3",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "badernaapk",
+          "configurations": {
+            "android": "1:***REMOVED***:android:c91457ae9e79ff9e29f0c3",
+            "ios": "1:***REMOVED***:ios:496f9ec73a714ce629f0c3",
+            "macos": "1:***REMOVED***:ios:496f9ec73a714ce629f0c3",
+            "web": "***REMOVED***",
+            "windows": "1:***REMOVED***:web:25318807b8ccbbcf29f0c3"
+          }
+        }
+      }
+    }
+  }
+}

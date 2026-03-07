@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- FUNÇÕES AUXILIARES ---
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+    
+    function getRole() {
+      // Retorna o 'role' se o documento existir, ou 'user' se não existir.
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : 'user';
+    }
+
+    // --- REGRAS PARA "PLANTAS" ---
+    match /plantas/{plantaId} {
+      allow read: if true;
+      
+      // Escritores e Super Admins podem CRIAR e ATUALIZAR
+      allow create, update: if isLoggedIn() && (getRole() == 'escritor' || getRole() == 'super_admin');
+      
+      // Regra de DELETAR:
+      allow delete: if isLoggedIn() && (
+                      // 1. O Super Admin pode deletar...
+                      getRole() == 'super_admin' || 
+                      // 2. OU o dono pode deletar
+                      (resource.data.creatorId == request.auth.uid)
+                    );
+    }
+
+    // --- REGRAS PARA "USUÁRIOS" ---
+    match /users/{userId} {
+      // Super admin gerencia a coleção inteira
+      allow list, write: if isLoggedIn() && getRole() == 'super_admin';
+      // Usuário logado lê o próprio perfil
+      allow get: if isLoggedIn() && request.auth.uid == userId;
+      // Usuário logado cria o próprio perfil no primeiro login (auto-registro)
+      allow create: if isLoggedIn() && request.auth.uid == userId;
+    }
+    
+    // --- REGRAS PARA "SUGESTOES" ---
+    match /sugestoes/{sugestaoId} {
+      allow create: if true;
+      allow read, update, delete: if false;
+    }
+
+    // --- REGRAS PARA "SOLICITAÇÕES DE CARGO" ---
+    match /role_requests/{userId} {
+      // Qualquer usuário logado pode criar e ler seu próprio pedido
+      allow create, get: if isLoggedIn() && request.auth.uid == userId;
+      // Super admin pode listar e deletar solicitações
+      allow list, delete: if isLoggedIn() && getRole() == 'super_admin';
+    }
+  }
+}
