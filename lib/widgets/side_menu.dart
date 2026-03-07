@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:async'; // Precisamos disso para usar o Timer
-import '../screens/admin_login_screen.dart'; // A tela de login secreta
-import '../screens/manage_plants_screen.dart'; // Tela de gerenciar plantas
-import '../screens/manage_admins_screen.dart'; // Tela de gerenciar administradores
+import 'dart:async';
+import '../screens/admin_login_screen.dart';
+import '../screens/manage_plants_screen.dart';
+import '../screens/manage_admins_screen.dart';
 import '../screens/suggestions_screen.dart';
+import '../screens/request_role_screen.dart';
+import '../utils/theme_controller.dart';
 
 class SideMenu extends StatefulWidget {
   const SideMenu({super.key});
@@ -125,21 +127,30 @@ class _SideMenuState extends State<SideMenu> {
             // 4. O cabeçalho que o usuário vê (é o "filho" do gesto)
             child: UserAccountsDrawerHeader(
               accountName: const Text(
-                "Sumaúma App",
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-              accountEmail: const Text(
-                "Conhecimento Medicinal",
-                style: TextStyle(color: Colors.white70),
-              ),
-              currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Image.asset("icons/icon.png"),
+                "Sumaúma",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              decoration: BoxDecoration(color: Colors.green),
+              accountEmail: const Text(
+                "Enciclopédia Amazônica",
+                style: TextStyle(color: Colors.white70),
+              ),
+              currentAccountPicture: Builder(
+                builder: (context) {
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
+                  return Image.asset(
+                    isDark ? 'icons/ico-branco.png' : 'icons/ico-verde.png',
+                    fit: BoxFit.contain,
+                  );
+                },
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).appBarTheme.backgroundColor,
+              ),
             ),
           ),
 
@@ -179,10 +190,29 @@ class _SideMenuState extends State<SideMenu> {
               },
             ),
 
-          // Divisor - mostrado apenas se há opções de admin visíveis
+          // Opção "Solicitar Acesso" - visível apenas para usuários comuns
+          if (_userRole == 'usuario' &&
+              FirebaseAuth.instance.currentUser != null)
+            ListTile(
+              leading: const Icon(Icons.edit_note_rounded),
+              title: const Text('Pedidos (Ser Escritor)'),
+              onTap: () {
+                Navigator.pop(context); // Fecha o menu
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RequestRoleScreen(),
+                  ),
+                );
+              },
+            ),
+
+          // Divisor - mostrado apenas se há opções de admin ou solicitação visíveis
           if (_userRole == 'escritor' ||
               _userRole == 'admin' ||
-              _userRole == 'super_admin')
+              _userRole == 'super_admin' ||
+              (_userRole == 'usuario' &&
+                  FirebaseAuth.instance.currentUser != null))
             const Divider(),
 
           // Menu Geral
@@ -216,19 +246,29 @@ class _SideMenuState extends State<SideMenu> {
             },
           ),
 
-          // Opção de Logout (visível apenas para admin/escritor/super_admin)
-          if (_userRole == 'escritor' ||
-              _userRole == 'admin' ||
-              _userRole == 'super_admin')
+          // ── TEMA ─────────────────────────────────────────────
+          const Divider(),
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: themeController,
+            builder: (context, mode, _) {
+              return ListTile(
+                leading: Icon(themeIcon(mode)),
+                title: Text(themeLabel(mode)),
+                trailing: const Icon(Icons.chevron_right_rounded, size: 18),
+                onTap: cycleTheme,
+              );
+            },
+          ),
+
+          // ── LOGOUT ───────────────────────────────────────────
+          if (FirebaseAuth.instance.currentUser != null) ...[
             const Divider(),
-          if (_userRole == 'escritor' ||
-              _userRole == 'admin' ||
-              _userRole == 'super_admin')
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Sair'),
               onTap: _logout,
             ),
+          ],
         ],
       ),
     );

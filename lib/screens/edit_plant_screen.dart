@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:io'; // Para usar o tipo File
 
 class EditPlantScreen extends StatefulWidget {
@@ -41,8 +42,8 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
 
   // 3. INICIALIZAR O CLOUDINARY
   final cloudinary = CloudinaryPublic(
-    '***REMOVED***',
-    '***REMOVED***',
+    dotenv.get('CLOUDINARY_CLOUD_NAME'),
+    dotenv.get('CLOUDINARY_UPLOAD_PRESET'),
     cache: false,
   );
 

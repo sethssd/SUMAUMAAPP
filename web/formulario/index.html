@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SUMAÚMA — Formulário de Planta</title>
+  <link rel="icon" type="image/png" href="/icons/ico-branco.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Quill.js Rich Text Editor -->
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
+  <script src="/config.js"></script>
+
+  <style>
+    /* ── TOKENS ───────────────────────────────────────────── */
+    :root {
+      --green-deep: #1B4332;
+      --green-mid: #2D6A4F;
+      --green-bright: #40916C;
+      --green-sage: #74C69D;
+      --green-light: #D8F3DC;
+      --green-pale: #F0FBF4;
+      --white: #FFFFFF;
+      --gray-100: #F8F9FA;
+      --gray-200: #E9ECEF;
+      --gray-400: #ADB5BD;
+      --gray-600: #6C757D;
+      --gray-800: #343A40;
+      --red: #D62828;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --shadow: 0 4px 24px rgba(27, 67, 50, 0.10);
+      --shadow-card: 0 2px 12px rgba(27, 67, 50, 0.08);
+    }
+
+    /* ── RESET ────────────────────────────────────────────── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--green-deep) 0%, var(--green-mid) 100%);
+      min-height: 100vh;
+      color: var(--gray-800);
+    }
+
+    /* ── LOGIN SCREEN ─────────────────────────────────────── */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .login-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+
+    .login-logo {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .login-card h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--green-deep);
+      margin-bottom: 4px;
+    }
+
+    .login-card p.subtitle {
+      font-size: 14px;
+      color: var(--gray-600);
+      margin-bottom: 32px;
+    }
+
+    .login-error {
+      background: #FFF5F5;
+      border: 1px solid #FEB2B2;
+      color: var(--red);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    /* ── APP HEADER ───────────────────────────────────────── */
+    #app-header {
+      background: linear-gradient(90deg, var(--green-deep) 0%, var(--green-mid) 100%);
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo {
+      font-size: 28px;
+    }
+
+    .header-title {
+      color: var(--white);
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .header-badge {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--white);
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+
+    #btn-logout {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: var(--white);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+
+    #btn-logout:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* ── MAIN LAYOUT ──────────────────────────────────────── */
+    #app-screen {
+      display: none;
+    }
+
+    #main-content {
+      max-width: 760px;
+      margin: 32px auto;
+      padding: 0 16px 80px;
+    }
+
+    /* Progress bar */
+    #progress-bar-wrap {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #progress-bar-wrap span {
+      font-size: 13px;
+      color: var(--gray-600);
+      white-space: nowrap;
+    }
+
+    #progress-track {
+      flex: 1;
+      height: 8px;
+      background: var(--gray-200);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    #progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green-bright), var(--green-sage));
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    #progress-pct {
+      font-weight: 700;
+      color: var(--green-bright);
+      font-size: 14px;
+    }
+
+    /* ── SECTION CARDS ────────────────────────────────────── */
+    .section-card {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+
+    .section-header:hover {
+      background: var(--green-pale);
+    }
+
+    .section-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-accent {
+      width: 4px;
+      height: 28px;
+      border-radius: 2px;
+      background: linear-gradient(180deg, var(--green-bright), var(--green-sage));
+    }
+
+    .section-header h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--green-deep);
+    }
+
+    .section-toggle {
+      font-size: 20px;
+      color: var(--gray-400);
+      transition: transform 0.25s;
+    }
+
+    .section-toggle.open {
+      transform: rotate(180deg);
+    }
+
+    .section-body {
+      padding: 0 20px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease, padding 0.25s ease;
+    }
+
+    .section-body.open {
+      max-height: 3000px;
+      padding: 4px 20px 24px;
+    }
+
+    /* ── FORM FIELDS ──────────────────────────────────────── */
+    .field-group {
+      margin-top: 20px;
+    }
+
+    .field-group:first-child {
+      margin-top: 0;
+    }
+
+    label.field-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--green-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    label.field-label .icon {
+      font-size: 14px;
+    }
+
+    .required-badge {
+      background: var(--green-light);
+      color: var(--green-mid);
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--gray-800);
+      background: var(--gray-100);
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+      outline: none;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: var(--green-bright);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(64, 145, 108, 0.12);
+    }
+
+    input.invalid,
+    textarea.invalid {
+      border-color: var(--red);
+      background: #fff8f8;
+    }
+
+    .helper-text {
+      font-size: 12px;
+      color: var(--gray-600);
+      margin-top: 5px;
+    }
+
+    .error-text {
+      font-size: 12px;
+      color: var(--red);
+      margin-top: 5px;
+      display: none;
+    }
+
+    /* ── KEYWORD CHIPS ────────────────────────────────────── */
+    #chips-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--green-light);
+      color: var(--green-deep);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .chip-remove {
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--green-mid);
+      line-height: 1;
+    }
+
+    .chip-remove:hover {
+      color: var(--red);
+    }
+
+    #keyword-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    #keyword-input-row input {
+      flex: 1;
+    }
+
+    #btn-add-chip {
+      background: var(--green-bright);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 0 18px;
+      cursor: pointer;
+      font-size: 20px;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+
+    #btn-add-chip:hover {
+      background: var(--green-deep);
+    }
+
+    /* ── UPLOAD ZONES ─────────────────────────────────────── */
+    .upload-zone {
+      border: 2px dashed var(--green-sage);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: var(--green-pale);
+    }
+
+    .upload-zone:hover {
+      border-color: var(--green-bright);
+      background: var(--green-light);
+    }
+
+    .upload-zone.has-file {
+      border-style: solid;
+      border-color: var(--green-bright);
+    }
+
+    .upload-icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+
+    .upload-label {
+      font-size: 14px;
+      color: var(--green-mid);
+      font-weight: 500;
+    }
+
+    .upload-sub {
+      font-size: 12px;
+      color: var(--gray-600);
+      margin-top: 4px;
+    }
+
+    .upload-preview {
+      max-width: 100%;
+      max-height: 280px;
+      border-radius: var(--radius-sm);
+      margin: 12px auto 0;
+      display: block;
+      object-fit: cover;
+    }
+
+    .upload-filename {
+      font-size: 13px;
+      color: var(--green-mid);
+      font-weight: 500;
+      margin-top: 8px;
+      word-break: break-all;
+    }
+
+    /* ── UPLOAD PROGRESS ──────────────────────────────────── */
+    .upload-progress-wrap {
+      margin-top: 12px;
+      display: none;
+    }
+
+    .upload-progress-label {
+      font-size: 13px;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .upload-progress-track {
+      height: 6px;
+      background: var(--gray-200);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .upload-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green-bright), var(--green-sage));
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .upload-success {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--green-bright);
+      font-weight: 500;
+      margin-top: 8px;
+    }
+
+    /* ── 3D MODEL WIDGET ──────────────────────────────────── */
+    .model-upload-widget {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--gray-100);
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .model-upload-widget:hover {
+      border-color: var(--green-bright);
+      background: var(--green-pale);
+    }
+
+    .model-upload-widget.has-file {
+      border-color: var(--green-bright);
+      background: var(--green-pale);
+    }
+
+    .model-icon {
+      font-size: 32px;
+    }
+
+    .model-info {
+      flex: 1;
+    }
+
+    .model-info .model-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-800);
+    }
+
+    .model-info .model-sub {
+      font-size: 12px;
+      color: var(--gray-600);
+      margin-top: 2px;
+    }
+
+    /* ── STICKY SAVE BUTTON ───────────────────────────────── */
+    #save-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 16px 24px;
+      background: linear-gradient(0deg, rgba(27, 67, 50, 0.97) 0%, rgba(27, 67, 50, 0.85) 100%);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      z-index: 200;
+    }
+
+    #btn-save {
+      background: linear-gradient(135deg, var(--green-bright), var(--green-mid));
+      color: var(--white);
+      border: none;
+      border-radius: 30px;
+      padding: 16px 48px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(64, 145, 108, 0.5);
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+      min-width: 240px;
+      justify-content: center;
+    }
+
+    #btn-save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px rgba(64, 145, 108, 0.6);
+    }
+
+    #btn-save:active {
+      transform: translateY(0);
+    }
+
+    #btn-save:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #btn-save .save-icon {
+      font-size: 20px;
+    }
+
+    /* ── TOAST ────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--green-deep);
+      color: var(--white);
+      padding: 14px 24px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      z-index: 300;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    #toast.error {
+      background: var(--red);
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── SPINNER ──────────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-top-color: var(--white);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ── LOGIN BUTTON / SHARED BUTTON STYLE ───────────────── */
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, var(--green-bright), var(--green-mid));
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.2s;
+      box-shadow: 0 4px 16px rgba(64, 145, 108, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ── LOGIN FIELDS ─────────────────────────────────────── */
+    .login-field {
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .login-field label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    /* ── RESPONSIVE ───────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .login-card {
+        padding: 36px 24px;
+      }
+
+      #main-content {
+        padding: 0 12px 80px;
+      }
+
+      .section-body.open {
+        padding: 4px 14px 20px;
+      }
+    }
+
+    /* ── QUILL EDITOR OVERRIDES ───────────────────────── */
+    .quill-wrap {
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--gray-100);
+      transition: border-color 0.2s;
+    }
+
+    .quill-wrap:focus-within {
+      border-color: var(--green-bright);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(64, 145, 108, 0.12);
+    }
+
+    .quill-wrap .ql-toolbar.ql-snow {
+      border: none;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--white);
+      padding: 6px 8px;
+    }
+
+    .quill-wrap .ql-container.ql-snow {
+      border: none;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      min-height: 120px;
+    }
+
+    .quill-wrap .ql-editor {
+      min-height: 120px;
+      padding: 12px 14px;
+      color: var(--gray-800);
+      line-height: 1.6;
+    }
+
+    .quill-wrap .ql-editor.ql-blank::before {
+      font-style: normal;
+      color: var(--gray-400);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ========================================================
+     LOGIN SCREEN
+======================================================== -->
+  <div id="login-screen">
+    <div class="login-card">
+      <div class="login-logo"><img src="/icons/icon.png" alt="SUMAÚMA"
+          style="width:64px;height:64px;border-radius:16px;" /></div>
+      <h1>SUMAÚMA</h1>
+      <p class="subtitle">Painel de administração de plantas</p>
+
+      <div class="login-error" id="login-error"></div>
+
+      <div class="login-field">
+        <label for="login-email">E-mail</label>
+        <input type="email" id="login-email" placeholder="admin@email.com" autocomplete="email" />
+      </div>
+      <div class="login-field">
+        <label for="login-password">Senha</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button class="btn-primary" id="btn-login">
+        <span id="login-text">Entrar</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================
+     APP SCREEN
+======================================================== -->
+  <div id="app-screen">
+
+    <!-- Header -->
+    <header id="app-header">
+      <div class="header-left">
+        <span class="header-logo"><img src="/icons/ico-branco.png" alt=""
+            style="width:36px;height:36px;border-radius:0;vertical-align:middle;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.3));" /></span>
+        <span class="header-title">SUMAÚMA</span>
+        <span class="header-badge" id="mode-badge">Nova Planta</span>
+      </div>
+      <button id="btn-logout">Sair</button>
+    </header>
+
+    <div id="main-content">
+
+      <!-- Progress bar -->
+      <div id="progress-bar-wrap">
+        <span>Formulário</span>
+        <div id="progress-track">
+          <div id="progress-fill"></div>
+        </div>
+        <span id="progress-pct">0%</span>
+      </div>
+
+      <!-- ====================================================
+         SEÇÃO 1: IDENTIFICAÇÃO
+    ==================================================== -->
+      <div class="section-card">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-header-left">
+            <div class="section-accent"></div>
+            <h2>🌱 Identificação</h2>
+          </div>
+          <span class="section-toggle open">▾</span>
+        </div>
+        <div class="section-body open">
+
+          <!-- Nome -->
+          <div class="field-group">
+            <label class="field-label">
+              <span class="icon">📝</span> Nome
+              <span class="required-badge">obrigatório</span>
+            </label>
+            <input type="text" id="field-nome" placeholder="Ex: Açaí" oninput="updateProgress()" />
+            <div class="error-text" id="err-nome">O nome é obrigatório.</div>
+          </div>
+
+          <!-- Nome Científico -->
+          <div class="field-group">
+            <label class="field-label"><span class="icon">🔬</span> Nome Científico</label>
+            <input type="text" id="field-nomeCientifico" placeholder="Ex: Euterpe oleracea"
+              oninput="updateProgress()" />
+          </div>
+
+          <!-- Descrição Curta -->
+          <div class="field-group">
+            <label class="field-label"><span class="icon">📄</span> Descrição Curta</label>
+            <input type="text" id="field-descricaoCurta" placeholder="Aparece na lista do app"
+              oninput="updateProgress()" />
+            <div class="helper-text">Resumo de uma linha para exibir na listagem</div>
+          </div>
+
+          <!-- Keywords / Chips -->
+          <div class="field-group">
+            <label class="field-label"><span class="icon">🏷️</span> Palavras-chave (busca)</label>
+            <div id="chips-container"></div>
+            <div id="keyword-input-row">
+              <input type="text" id="keyword-input" placeholder="Digite e pressione +" id="kw-input" />
+              <button id="btn-add-chip" onclick="addChip()" title="Adicionar">+</button>
+            </div>
+            <div class="helper-text">Usadas na busca do app. Ex: palmeira, fruto, amazônia</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================
+         SEÇÃO 2: MÍDIA
+    ==================================================== -->
+      <div class="section-card">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-header-left">
+            <div class="section-accent"></div>
+            <h2>📷 Mídia</h2>
+          </div>
+          <span class="section-toggle open">▾</span>
+        </div>
+        <div class="section-body open">
+
+          <!-- Imagem 2D -->
+          <div class="field-group">
+            <label class="field-label"><span class="icon">🖼️</span> Foto da Planta</label>
+            <div class="upload-zone" id="img-upload-zone" onclick="document.getElementById('img-input').click()">
+              <div class="upload-icon">📤</div>
+              <div class="upload-label">Toque para adicionar foto</div>
+              <div class="upload-sub">JPG ou PNG — máx. 10 MB</div>
+              <img class="upload-preview" id="img-preview" src="" style="display:none" />
+            </div>
+            <input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImageSelect()" />
+            <div class="upload-progress-wrap" id="img-progress-wrap">
+              <div class="upload-progress-label">
+                <span>Enviando...</span><span id="img-pct">0%</span>
+              </div>
+              <div class="upload-progress-track">
+                <div class="upload-progress-fill" id="img-progress-fill"></div>
+              </div>
+            </div>
+            <div class="upload-success" id="img-success">✅ Imagem carregada com sucesso</div>
+            <!-- Campo oculto que guarda a URL final -->
+            <input type="text" id="field-imagemUrl" style="display:none" />
+          </div>
+
+          <!-- Modelo 3D -->
+          <div class="field-group">
+            <label class="field-label"><span class="icon">🧊</span> Modelo 3D (.glb)</label>
+            <div class="model-upload-widget" id="model-upload-widget"
+              onclick="document.getElementById('model-input').click()">
+              <span class="model-icon" id="model-icon">🧊</span>
+              <div class="model-info">
+                <div class="model-name" id="model-name">Selecionar arquivo .glb</div>
+                <div class="model-sub" id="model-sub">Clique para escolher</div>
+              </div>
+              <span>›</span>
+            </div>
+            <input type="file" id="model-input" accept=".glb,.gltf" style="display:none"
+              onchange="handleModelSelect()" />
+            <div class="upload-progress-wrap" id="model-progress-wrap">
+              <div class="upload-progress-label">
+                <span>Enviando modelo...</span><span id="model-pct">0%</span>
+              </div>
+              <div class="upload-progress-track">
+                <div class="upload-progress-fill" id="model-progress-fill"></div>
+              </div>
+            </div>
+            <div class="upload-success" id="model-success">✅ Modelo 3D carregado com sucesso</div>
+            <input type="text" id="field-modelo3dUrl" style="display:none" />
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================
+         SEÇÃO 3: INFORMAÇÕES CIENTÍFICAS
+    ==================================================== -->
+      <div class="section-card">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-header-left">
+            <div class="section-accent"></div>
+            <h2>🔬 Informações Científicas</h2>
+          </div>
+          <span class="section-toggle">▾</span>
+        </div>
+        <div class="section-body">
+
+          <div class="field-group">
+            <label class="field-label"><span class="icon">🌿</span> Taxonomia e Nomes Populares</label>
+            <div class="quill-wrap">
+              <div id="editor-taxonomia"></div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label"><span class="icon">📖</span> Descrição Completa</label>
+            <div class="quill-wrap">
+              <div id="editor-descricao"></div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label"><span class="icon">📍</span> Distribuição e Habitat</label>
+            <div class="quill-wrap">
+              <div id="editor-distribuicaoHabitat"></div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label"><span class="icon">📅</span> Fenologia</label>
+            <div class="quill-wrap">
+              <div id="editor-fenologia"></div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label"><span class="icon">💰</span> Usos e Valor Econômico</label>
+            <div class="quill-wrap">
+              <div id="editor-usosEValorEconomico"></div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label"><span class="icon">💊</span> Farmacologia</label>
+            <div class="quill-wrap">
+              <div id="editor-farmacologia"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ====================================================
+         SEÇÃO 4: REFERÊNCIAS
+    ==================================================== -->
+      <div class="section-card">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-header-left">
+            <div class="section-accent"></div>
+            <h2>📚 Referências</h2>
+          </div>
+          <span class="section-toggle">▾</span>
+        </div>
+        <div class="section-body">
+
+          <div class="field-group">
+            <label class="field-label"><span class="icon">🧪</span> Referências Farmacológicas</label>
+            <textarea id="field-referenciasFarmacologicas" rows="4" placeholder="SILVA, J. et al. (2020)..."
+              oninput="updateProgress()"></textarea>
+            <div class="helper-text">Separe cada referência com vírgula</div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label"><span class="icon">🔗</span> Referência Geral</label>
+            <textarea id="field-referenciaGeral" rows="4" placeholder="SOUZA, M. et al. (2018)..."
+              oninput="updateProgress()"></textarea>
+            <div class="helper-text">Separe cada referência com vírgula</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /main-content -->
+
+    <!-- Sticky save bar -->
+    <div id="save-bar">
+      <button id="btn-save" onclick="savePlanta()">
+        <span class="save-icon">🌿</span>
+        <span id="save-text">Salvar Planta</span>
+      </button>
+    </div>
+
+  </div><!-- /app-screen -->
+
+  <!-- Toast notification -->
+  <div id="toast"></div>
+
+  <!-- Quill.js library -->
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+
+  <!-- ========================================================
+     FIREBASE JS SDK (CDN — mesmas credenciais do app)
+======================================================== -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+      from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js';
+    import { getFirestore, doc, getDoc, addDoc, updateDoc, collection, serverTimestamp }
+      from 'https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js';
+
+    // ── Firebase config (mesmo projeto do app Flutter) ──────
+    const firebaseConfig = window.CONFIG.FIREBASE;
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ── Cloudinary config (mesmas credenciais do app) ────────
+    const CLOUDINARY_CLOUD = window.CONFIG.CLOUDINARY.cloudName;
+    const CLOUDINARY_PRESET = window.CONFIG.CLOUDINARY.uploadPreset;
+
+    // ── URL params ───────────────────────────────────────────
+    const params = new URLSearchParams(window.location.search);
+    const plantaId = params.get('id') || null;
+
+    // ── Expor funções para o HTML (onclick) ──────────────────
+    window._auth = auth;
+    window._db = db;
+    window._plantaId = plantaId;
+
+    // ── QUILL EDITOR CONFIG ───────────────────────────────
+    const QUILL_TOOLBAR = [
+      ['bold', 'italic', 'underline'],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      [{ 'align': [] }],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      ['clean'],
+    ];
+
+    const QUILL_FIELDS = [
+      'taxonomia', 'descricao', 'distribuicaoHabitat',
+      'fenologia', 'usosEValorEconomico', 'farmacologia',
+    ];
+
+    const quillEditors = {};
+    let _quillReady = false;
+
+    // Initialize Quill editors ONLY after login (deferred)
+    function initQuillEditors() {
+      if (_quillReady) return;
+      _quillReady = true;
+      try {
+        // Use inline styles instead of CSS classes (Flutter can't read ql-* classes)
+        const AlignStyle = window.Quill.import('attributors/style/align');
+        const SizeStyle = window.Quill.import('attributors/style/size');
+        window.Quill.register(AlignStyle, true);
+        window.Quill.register(SizeStyle, true);
+
+        QUILL_FIELDS.forEach(field => {
+          const container = document.querySelector('#editor-' + field);
+          if (container) {
+            quillEditors[field] = new window.Quill(container, {
+              theme: 'snow',
+              modules: { toolbar: QUILL_TOOLBAR },
+              placeholder: getPlaceholder(field),
+            });
+            quillEditors[field].on('text-change', () => updateProgress());
+          }
+        });
+      } catch (e) {
+        console.error('Erro ao inicializar Quill:', e);
+      }
+    }
+
+    function getPlaceholder(field) {
+      const map = {
+        taxonomia: 'Reino, Família, Gênero, nomes populares...',
+        descricao: 'Morfologia, características gerais...',
+        distribuicaoHabitat: 'Onde é encontrada, biomas, altitude...',
+        fenologia: 'Épocas de floração, frutificação...',
+        usosEValorEconomico: 'Uso alimentar, madeireiro, medicinal...',
+        farmacologia: 'Compostos bioativos, pesquisas, propriedades medicinais...',
+      };
+      return map[field] || 'Digite aqui...';
+    }
+
+    // Helper: get HTML from a Quill editor (returns '' if empty)
+    function getQuillHtml(field) {
+      const editor = quillEditors[field];
+      if (!editor) return '';
+      const html = editor.root.innerHTML;
+      // Quill returns '<p><br></p>' when empty
+      if (html === '<p><br></p>' || html === '<p></p>') return '';
+      return html;
+    }
+
+    // Helper: set HTML content into a Quill editor
+    function setQuillHtml(field, html) {
+      const editor = quillEditors[field];
+      if (!editor || !html) return;
+      editor.clipboard.dangerouslyPasteHTML(html);
+    }
+
+    // ── Auth state listener ──────────────────────────────────
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        showApp();
+        initQuillEditors();
+        if (plantaId) await loadPlanta(plantaId);
+      } else {
+        showLogin();
+      }
+    });
+
+    // ── LOGIN ────────────────────────────────────────────────
+    document.getElementById('btn-login').addEventListener('click', async () => {
+      const email = document.getElementById('login-email').value.trim();
+      const pass = document.getElementById('login-password').value;
+      const btn = document.getElementById('btn-login');
+      const errDiv = document.getElementById('login-error');
+
+      if (!email || !pass) {
+        errDiv.textContent = 'Preencha e-mail e senha.';
+        errDiv.style.display = 'block';
+        return;
+      }
+      btn.disabled = true;
+      document.getElementById('login-text').innerHTML = '<div class="spinner"></div>';
+      errDiv.style.display = 'none';
+
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (e) {
+        errDiv.textContent = 'E-mail ou senha incorretos.';
+        errDiv.style.display = 'block';
+        btn.disabled = false;
+        document.getElementById('login-text').textContent = 'Entrar';
+      }
+    });
+
+    // Enter no campo de senha faz login
+    document.getElementById('login-password').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('btn-login').click();
+    });
+
+    // ── LOGOUT ───────────────────────────────────────────────
+    document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
+    // ── CARREGAR PLANTA PARA EDIÇÃO ───────────────────────────
+    async function loadPlanta(id) {
+      const snap = await getDoc(doc(db, 'plantas', id));
+      if (!snap.exists()) { showToast('Planta não encontrada.', true); return; }
+      const d = snap.data();
+
+      setField('nome', d.nome);
+      setField('nomeCientifico', d.nomeCientifico);
+      setField('descricaoCurta', d.descricaoCurta);
+
+      // Rich text fields — populate Quill editors
+      setQuillHtml('taxonomia', d.taxonomiaNomesPopulares);
+      setQuillHtml('descricao', d.descricao || d.descricaoCompleta);
+      setQuillHtml('distribuicaoHabitat', d.distribuicaoHabitat);
+      setQuillHtml('fenologia', d.fenologia);
+      setQuillHtml('usosEValorEconomico', d.usosEValorEconomico);
+      setQuillHtml('farmacologia', d.farmacologia);
+
+      // Referências (pode ser array ou string)
+      const toStr = (v) => Array.isArray(v) ? v.join(', ') : (v || '');
+      setField('referenciasFarmacologicas', toStr(d.referenciasFarmacologicas));
+      setField('referenciaGeral', toStr(d.referenciaGeral));
+
+      // Keywords
+      const kws = Array.isArray(d.keywords) ? d.keywords : (d.keywords ? [d.keywords] : []);
+      kws.forEach(k => addChipValue(k));
+
+      // Imagem
+      if (d.imagemUrl) {
+        document.getElementById('field-imagemUrl').value = d.imagemUrl;
+        const prev = document.getElementById('img-preview');
+        prev.src = d.imagemUrl;
+        prev.style.display = 'block';
+        document.getElementById('img-upload-zone').classList.add('has-file');
+        document.getElementById('img-success').style.display = 'flex';
+      }
+
+      // Modelo 3D
+      if (d.modelo3dUrl) {
+        document.getElementById('field-modelo3dUrl').value = d.modelo3dUrl;
+        document.getElementById('model-name').textContent = 'Modelo 3D carregado';
+        document.getElementById('model-sub').textContent = d.modelo3dUrl.split('/').pop();
+        document.getElementById('model-upload-widget').classList.add('has-file');
+        document.getElementById('model-icon').textContent = '✅';
+        document.getElementById('model-success').style.display = 'flex';
+      }
+
+      updateProgress();
+    }
+
+    function setField(id, val) {
+      const el = document.getElementById('field-' + id);
+      if (el) el.value = val || '';
+    }
+
+    // ── SALVAR PLANTA ─────────────────────────────────────────
+    window.savePlanta = async function () {
+      const nome = document.getElementById('field-nome').value.trim();
+      if (!nome) {
+        document.getElementById('field-nome').classList.add('invalid');
+        document.getElementById('err-nome').style.display = 'block';
+        document.getElementById('field-nome').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      document.getElementById('field-nome').classList.remove('invalid');
+      document.getElementById('err-nome').style.display = 'none';
+
+      const btn = document.getElementById('btn-save');
+      btn.disabled = true;
+      document.getElementById('save-text').innerHTML = '<div class="spinner"></div> Salvando...';
+
+      // Montar keywords: chips + nome sempre incluído
+      let keywords = window._chips.map(c => c.toLowerCase());
+      const nomeLower = nome.toLowerCase();
+      if (!keywords.includes(nomeLower)) keywords.push(nomeLower);
+
+      const toList = (id) =>
+        document.getElementById('field-' + id).value
+          .split(',').map(s => s.trim()).filter(Boolean);
+
+      const data = {
+        nome: nome,
+        nomeCientifico: getVal('nomeCientifico'),
+        descricaoCurta: getVal('descricaoCurta'),
+        imagemUrl: getVal('imagemUrl'),
+        modelo3dUrl: getVal('modelo3dUrl'),
+        taxonomiaNomesPopulares: getQuillHtml('taxonomia'),
+        descricao: getQuillHtml('descricao'),
+        distribuicaoHabitat: getQuillHtml('distribuicaoHabitat'),
+        fenologia: getQuillHtml('fenologia'),
+        usosEValorEconomico: getQuillHtml('usosEValorEconomico'),
+        farmacologia: getQuillHtml('farmacologia'),
+        referenciasFarmacologicas: toList('referenciasFarmacologicas'),
+        referenciaGeral: toList('referenciaGeral'),
+        keywords: keywords,
+        updatedAt: serverTimestamp(),
+      };
+
+      try {
+        if (window._plantaId) {
+          await updateDoc(doc(db, 'plantas', window._plantaId), data);
+          showToast('✅ Planta atualizada com sucesso!');
+        } else {
+          data.creatorId = auth.currentUser?.uid;
+          data.createdAt = serverTimestamp();
+          await addDoc(collection(db, 'plantas'), data);
+          showToast('✅ Planta adicionada com sucesso!');
+          clearForm();
+        }
+      } catch (e) {
+        showToast('❌ Erro ao salvar: ' + e.message, true);
+      }
+
+      btn.disabled = false;
+      document.getElementById('save-text').textContent = 'Salvar Planta';
+    };
+
+    function getVal(id) {
+      return document.getElementById('field-' + id)?.value?.trim() || '';
+    }
+
+    function clearForm() {
+      document.querySelectorAll('input[type="text"]').forEach(el => el.value = '');
+      // Clear Quill editors
+      QUILL_FIELDS.forEach(field => {
+        if (quillEditors[field]) quillEditors[field].setText('');
+      });
+      window._chips = [];
+      renderChips();
+      document.getElementById('img-preview').style.display = 'none';
+      document.getElementById('img-success').style.display = 'none';
+      document.getElementById('img-upload-zone').classList.remove('has-file');
+      document.getElementById('model-name').textContent = 'Selecionar arquivo .glb';
+      document.getElementById('model-sub').textContent = 'Clique para escolher';
+      document.getElementById('model-icon').textContent = '🧊';
+      document.getElementById('model-upload-widget').classList.remove('has-file');
+      document.getElementById('model-success').style.display = 'none';
+      updateProgress();
+    }
+
+    // ── UPLOAD CLOUDINARY ──────────────────────────────────────
+    window.handleImageSelect = async function () {
+      const file = document.getElementById('img-input').files[0];
+      if (!file) return;
+
+      // Preview local
+      const reader = new FileReader();
+      reader.onload = e => {
+        const prev = document.getElementById('img-preview');
+        prev.src = e.target.result;
+        prev.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+
+      // Upload para Cloudinary com XMLHttpRequest (para ter progresso)
+      const progressWrap = document.getElementById('img-progress-wrap');
+      const progressFill = document.getElementById('img-progress-fill');
+      const progressPct = document.getElementById('img-pct');
+      const successEl = document.getElementById('img-success');
+      progressWrap.style.display = 'block';
+      successEl.style.display = 'none';
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_PRESET);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`);
+      xhr.upload.onprogress = (e) => {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        progressFill.style.width = pct + '%';
+        progressPct.textContent = pct + '%';
+      };
+      xhr.onload = () => {
+        progressWrap.style.display = 'none';
+        const res = JSON.parse(xhr.responseText);
+        if (res.secure_url) {
+          document.getElementById('field-imagemUrl').value = res.secure_url;
+          document.getElementById('img-upload-zone').classList.add('has-file');
+          successEl.style.display = 'flex';
+          showToast('📷 Imagem enviada!');
+        } else {
+          showToast('Erro no upload da imagem.', true);
+        }
+      };
+      xhr.onerror = () => {
+        progressWrap.style.display = 'none';
+        showToast('Erro de rede no upload.', true);
+      };
+      xhr.send(formData);
+    };
+
+    window.handleModelSelect = async function () {
+      const file = document.getElementById('model-input').files[0];
+      if (!file) return;
+
+      document.getElementById('model-name').textContent = file.name;
+      document.getElementById('model-sub').textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
+
+      const progressWrap = document.getElementById('model-progress-wrap');
+      const progressFill = document.getElementById('model-progress-fill');
+      const progressPct = document.getElementById('model-pct');
+      const successEl = document.getElementById('model-success');
+      progressWrap.style.display = 'block';
+      successEl.style.display = 'none';
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_PRESET);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/raw/upload`);
+      xhr.upload.onprogress = (e) => {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        progressFill.style.width = pct + '%';
+        progressPct.textContent = pct + '%';
+      };
+      xhr.onload = () => {
+        progressWrap.style.display = 'none';
+        const res = JSON.parse(xhr.responseText);
+        if (res.secure_url) {
+          document.getElementById('field-modelo3dUrl').value = res.secure_url;
+          document.getElementById('model-upload-widget').classList.add('has-file');
+          document.getElementById('model-icon').textContent = '✅';
+          successEl.style.display = 'flex';
+          showToast('🧊 Modelo 3D enviado!');
+        } else {
+          showToast('Erro no upload do modelo.', true);
+        }
+      };
+      xhr.onerror = () => { progressWrap.style.display = 'none'; showToast('Erro de rede.', true); };
+      xhr.send(formData);
+    };
+
+    // ── HELPERS ───────────────────────────────────────────────
+    function showApp() {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-screen').style.display = 'block';
+      document.getElementById('mode-badge').textContent = plantaId ? 'Editar Planta' : 'Nova Planta';
+    }
+
+    function showLogin() {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app-screen').style.display = 'none';
+      document.getElementById('btn-login').disabled = false;
+      document.getElementById('login-text').textContent = 'Entrar';
+    }
+
+    let toastTimer;
+    window.showToast = function (msg, isError = false) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = isError ? 'error show' : 'show';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.className = '', 3500);
+    };
+
+    // ── SEÇÕES COLAPSÁVEIS ────────────────────────────────────
+    window.toggleSection = function (header) {
+      const body = header.nextElementSibling;
+      const toggle = header.querySelector('.section-toggle');
+      const open = body.classList.toggle('open');
+      toggle.classList.toggle('open', open);
+    };
+
+    // ── CHIPS / KEYWORDS ──────────────────────────────────────
+    window._chips = [];
+
+    window.addChipValue = function (val) {
+      const v = val.trim().toLowerCase();
+      if (!v || window._chips.includes(v)) return;
+      window._chips.push(v);
+      renderChips();
+    };
+
+    window.addChip = function () {
+      const input = document.getElementById('keyword-input');
+      addChipValue(input.value);
+      input.value = '';
+      input.focus();
+      updateProgress();
+    };
+
+    document.getElementById('keyword-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addChip(); }
+    });
+
+    function renderChips() {
+      const container = document.getElementById('chips-container');
+      container.innerHTML = '';
+      window._chips.forEach((chip, i) => {
+        const el = document.createElement('div');
+        el.className = 'chip';
+        el.innerHTML = `#${chip} <span class="chip-remove" onclick="removeChip(${i})">×</span>`;
+        container.appendChild(el);
+      });
+    }
+
+    window.removeChip = function (i) {
+      window._chips.splice(i, 1);
+      renderChips();
+      updateProgress();
+    };
+
+    // ── BARRA DE PROGRESSO ────────────────────────────────────
+    const TRACKED_INPUT_FIELDS = [
+      'field-nome', 'field-nomeCientifico', 'field-descricaoCurta',
+      'field-referenciasFarmacologicas', 'field-referenciaGeral',
+      'field-imagemUrl', 'field-modelo3dUrl',
+    ];
+
+    window.updateProgress = function () {
+      let filled = 0;
+      const totalFields = TRACKED_INPUT_FIELDS.length + QUILL_FIELDS.length + 1; // +1 for chips
+
+      // Check regular input fields
+      TRACKED_INPUT_FIELDS.forEach(id => {
+        if (document.getElementById(id)?.value?.trim()) filled++;
+      });
+
+      // Check Quill editors
+      QUILL_FIELDS.forEach(field => {
+        if (getQuillHtml(field)) filled++;
+      });
+
+      // Check chips
+      if (window._chips.length > 0) filled++;
+
+      const pct = Math.round((filled / totalFields) * 100);
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('progress-pct').textContent = pct + '%';
+    };
+  </script>
+</body>
+
+</html>

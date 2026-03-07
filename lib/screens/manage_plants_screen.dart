@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 import '../utils/app_constants.dart';
-import 'edit_plant_screen.dart'; // O formulário de adicionar/editar planta
 
 // Tela para gerenciar plantas. A capacidade de deletar plantas é
 // condicionada ao cargo do usuário: 'super_admin' pode apagar tudo,
@@ -40,12 +40,20 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
       await FirebaseFirestore.instance
           .collection(AppConstants.collectionPlants)
           .doc(id)
-          .delete();
+          .update({'excluida': true});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$nome foi deletada.'),
+            content: Text('$nome foi movida para a lixeira.'),
             backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'RESTAURAR',
+              textColor: Colors.white,
+              onPressed: () => FirebaseFirestore.instance
+                  .collection(AppConstants.collectionPlants)
+                  .doc(id)
+                  .update({'excluida': false}),
+            ),
           ),
         );
       }
@@ -61,6 +69,25 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
     }
   }
 
+  // Abre o formulário web de planta no navegador do dispositivo.
+  // Se [plantaId] for null abre em modo "Adicionar"; caso contrário, "Editar".
+  Future<void> _openWebForm(
+    BuildContext context, {
+    required String? plantaId,
+  }) async {
+    const baseUrl = 'https://badernaapk.web.app/formulario';
+    final urlStr = plantaId != null ? '$baseUrl?id=$plantaId' : baseUrl;
+    final uri = Uri.parse(urlStr);
+
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível abrir o navegador.')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // 1. PEGAMOS O ID DO USUÁRIO ATUAL LOGADO
@@ -69,13 +96,9 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Gerenciar Plantas')),
       floatingActionButton: FloatingActionButton(
+        tooltip: 'Adicionar nova planta',
         child: const Icon(Icons.add),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const EditPlantScreen()),
-          );
-        },
+        onPressed: () => _openWebForm(context, plantaId: null),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -94,11 +117,23 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
               ),
             );
           }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          final plantas = snapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final bool isNotDeleted = data['excluida'] != true;
+
+            // Se for escritor, vê apenas o que criou
+            if (_userRole == AppConstants.roleEscritor) {
+              return isNotDeleted &&
+                  data[AppConstants.fieldCreatorId] == currentUserId;
+            }
+
+            // Se for admin ou super_admin, vê tudo que não está excluído
+            return isNotDeleted;
+          }).toList();
+
+          if (plantas.isEmpty) {
             return const Center(child: Text('Nenhuma planta cadastrada.'));
           }
-
-          final plantas = snapshot.data!.docs;
 
           return ListView.builder(
             itemCount: plantas.length,
@@ -116,15 +151,8 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
                 subtitle: Text(data[AppConstants.fieldNomeCientifico] ?? ''),
                 trailing: IconButton(
                   icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            EditPlantScreen(plantaId: planta.id),
-                      ),
-                    );
-                  },
+                  tooltip: 'Editar no navegador',
+                  onPressed: () => _openWebForm(context, plantaId: planta.id),
                 ),
               );
 
@@ -158,16 +186,18 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: const Text('Confirmar'),
-                        content: Text('Deseja realmente deletar "$nome"?'),
+                        title: const Text('Mover para Lixeira'),
+                        content: Text(
+                          'Deseja realmente remover "$nome"? Poderá restaurar no painel web.',
+                        ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(false),
-                            child: const Text('Cancelar'),
+                            child: const Text('Manter'),
                           ),
                           ElevatedButton(
                             onPressed: () => Navigator.of(context).pop(true),
-                            child: const Text('Deletar'),
+                            child: const Text('Remover'),
                           ),
                         ],
                       ),

@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -40,49 +41,54 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: '***REMOVED***',
-    appId: '***REMOVED***',
-    messagingSenderId: '***REMOVED***',
-    projectId: 'badernaapk',
-    authDomain: 'badernaapk.firebaseapp.com',
-    storageBucket: 'badernaapk.firebasestorage.app',
-    measurementId: '***REMOVED***',
+  static FirebaseOptions web = FirebaseOptions(
+    apiKey: dotenv.get('FIREBASE_API_KEY_WEB'),
+    appId: dotenv.get('FIREBASE_APP_ID_WEB'),
+    messagingSenderId: dotenv.get('FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: dotenv.get('FIREBASE_PROJECT_ID'),
+    authDomain: dotenv.get('FIREBASE_AUTH_DOMAIN'),
+    storageBucket: dotenv.get('FIREBASE_STORAGE_BUCKET'),
+    measurementId: dotenv.get('FIREBASE_MEASUREMENT_ID_WEB'),
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: '***REMOVED***',
-    appId: '1:***REMOVED***:android:c91457ae9e79ff9e29f0c3',
-    messagingSenderId: '***REMOVED***',
-    projectId: 'badernaapk',
-    storageBucket: 'badernaapk.firebasestorage.app',
+  static FirebaseOptions android = FirebaseOptions(
+    apiKey: dotenv.get('FIREBASE_API_KEY_ANDROID'),
+    appId: dotenv.get('FIREBASE_APP_ID_ANDROID'),
+    messagingSenderId: dotenv.get('FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: dotenv.get('FIREBASE_PROJECT_ID'),
+    storageBucket: dotenv.get('FIREBASE_STORAGE_BUCKET'),
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: '***REMOVED***',
-    appId: '1:***REMOVED***:ios:496f9ec73a714ce629f0c3',
-    messagingSenderId: '***REMOVED***',
-    projectId: 'badernaapk',
-    storageBucket: 'badernaapk.firebasestorage.app',
+  static FirebaseOptions ios = FirebaseOptions(
+    apiKey: dotenv.get('FIREBASE_API_KEY_IOS'),
+    appId: dotenv.get('FIREBASE_APP_ID_IOS'),
+    messagingSenderId: dotenv.get('FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: dotenv.get('FIREBASE_PROJECT_ID'),
+    storageBucket: dotenv.get('FIREBASE_STORAGE_BUCKET'),
     iosBundleId: 'com.example.badernaApk',
   );
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: '***REMOVED***',
-    appId: '1:***REMOVED***:ios:496f9ec73a714ce629f0c3',
-    messagingSenderId: '***REMOVED***',
-    projectId: 'badernaapk',
-    storageBucket: 'badernaapk.firebasestorage.app',
+  static FirebaseOptions macos = FirebaseOptions(
+    apiKey: dotenv.get('FIREBASE_API_KEY_IOS'),
+    appId: dotenv.get('FIREBASE_APP_ID_IOS'),
+    messagingSenderId: dotenv.get('FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: dotenv.get('FIREBASE_PROJECT_ID'),
+    storageBucket: dotenv.get('FIREBASE_STORAGE_BUCKET'),
     iosBundleId: 'com.example.badernaApk',
   );
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: '***REMOVED***',
-    appId: '1:***REMOVED***:web:25318807b8ccbbcf29f0c3',
-    messagingSenderId: '***REMOVED***',
-    projectId: 'badernaapk',
-    authDomain: 'badernaapk.firebaseapp.com',
-    storageBucket: 'badernaapk.firebasestorage.app',
-    measurementId: '***REMOVED***',
+  static FirebaseOptions windows = FirebaseOptions(
+    apiKey: dotenv.get('FIREBASE_API_KEY_WEB'),
+    appId: dotenv
+        .get('FIREBASE_APP_ID_WEB')
+        .replaceAll(
+          'web:66f93c2f568c8cd829f0c3',
+          'web:25318807b8ccbbcf29f0c3',
+        ), // Note: Windows app ID was slightly different in the original file
+    messagingSenderId: dotenv.get('FIREBASE_MESSAGING_SENDER_ID'),
+    projectId: dotenv.get('FIREBASE_PROJECT_ID'),
+    authDomain: dotenv.get('FIREBASE_AUTH_DOMAIN'),
+    storageBucket: dotenv.get('FIREBASE_STORAGE_BUCKET'),
+    measurementId: dotenv.get('FIREBASE_MEASUREMENT_ID_WINDOWS'),
   );
 }
