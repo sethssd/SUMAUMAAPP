@@ -12,7 +12,22 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Baderna"),
+        title: const Text("Sumaúma"),
+        leading: Builder(
+          builder: (context) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            return GestureDetector(
+              onTap: () => Scaffold.of(context).openDrawer(),
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Image.asset(
+                  isDark ? 'icons/ico-branco.png' : 'icons/ico-verde.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
+            );
+          },
+        ),
         actions: [
           // Ícone de Pesquisa (Foto 1)
           IconButton(
@@ -34,11 +49,14 @@ class HomeScreen extends StatelessWidget {
           if (snapshot.hasError) {
             return const Center(child: Text("Erro ao carregar as plantas."));
           }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          final plantas = snapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['excluida'] != true;
+          }).toList();
+
+          if (plantas.isEmpty) {
             return const Center(child: Text("Nenhuma planta encontrada."));
           }
-
-          final plantas = snapshot.data!.docs;
 
           return ListView.builder(
             itemCount: plantas.length,
@@ -75,7 +93,7 @@ class HomeScreen extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(2),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.7),
+                                color: Colors.black.withValues(alpha: 0.7),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
