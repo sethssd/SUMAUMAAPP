@@ -50,3 +50,9 @@ web/config.js
 analyze.txt
 analyze_utf8.txt
 *.txt
+
+# Firebase Config Files
+android/app/google-services.json
+firebase.json
+bfg-1.15.0.jar
+bfg.jar
