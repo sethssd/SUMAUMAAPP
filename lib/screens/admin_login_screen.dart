@@ -300,8 +300,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               icon: Image.asset(
-                'icons/icons8-google-logo-48.png',
-                height: 24,
+                'icons/google50x50.png',
+                height: 20, // Menor no botão do que os 24px do Material Design
               ),
               label: const Text(
                 "Entrar com o Google",
