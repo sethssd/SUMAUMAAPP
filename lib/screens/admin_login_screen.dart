@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/auth_service.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -288,6 +289,35 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               onPressed: _isLoading ? null : _showCreateAccountDialog,
               icon: const Icon(Icons.person_add_outlined),
               label: const Text("Criar Conta"),
+            ),
+            const SizedBox(height: 16),
+            
+            // Botão Entrar com o Google
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              icon: Image.asset(
+                'icons/icons8-google-logo-48.png',
+                height: 24,
+              ),
+              label: const Text(
+                "Entrar com o Google",
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      setState(() => _isLoading = true);
+                      final userCred = await AuthService().signInWithGoogle();
+                      if (mounted) setState(() => _isLoading = false);
+
+                      if (userCred != null && mounted) {
+                        Navigator.pop(context); // Fechar tela de login e voltar logado
+                      }
+                    },
             ),
           ],
         ),
