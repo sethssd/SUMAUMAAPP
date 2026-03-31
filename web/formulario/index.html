@@ -909,6 +909,28 @@
             <input type="text" id="field-modelo3dUrl" style="display:none" />
           </div>
 
+          <!-- Imagens Extras (Miniaturas) -->
+          <div class="field-group">
+            <label class="field-label"><span class="icon">🖼️</span> Galeria Lateral (Outras Fotos)</label>
+            <div class="upload-zone" id="extras-upload-zone" onclick="document.getElementById('extras-input').click()">
+              <div class="upload-icon">📸</div>
+              <div class="upload-label">Toque para selecionar mais fotos</div>
+              <div class="upload-sub">Você pode selecionar várias. Elas ficarão pequenas na lateral da tela.</div>
+            </div>
+            <input type="file" id="extras-input" accept="image/*" multiple style="display:none" onchange="handleExtrasSelect()" />
+            <div class="upload-progress-wrap" id="extras-progress-wrap" style="display:none;margin-top:12px;">
+              <div class="upload-progress-label">
+                <span>Enviando...</span><span id="extras-pct">0%</span>
+              </div>
+              <div class="upload-progress-track">
+                <div class="upload-progress-fill" id="extras-progress-fill" style="width:0%;"></div>
+              </div>
+            </div>
+            
+            <!-- Listagem visual das fotos enviadas -->
+            <div id="extras-gallery" style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;"></div>
+          </div>
+
         </div>
       </div>
 
@@ -940,6 +962,12 @@
           </div>
 
           <div class="field-group">
+            <label class="field-label"><span class="icon">🔎</span> Descobertas Científicas</label>
+            <textarea id="field-descobertasCientificas" rows="3" placeholder="Resumo científico curto para o card principal..." oninput="updateProgress()"></textarea>
+            <div class="helper-text">Texto em destaque no card com a lupa dourada (O que a ciência descobriu).</div>
+          </div>
+
+          <div class="field-group">
             <label class="field-label"><span class="icon">📍</span> Distribuição e Habitat</label>
             <div class="quill-wrap">
               <div id="editor-distribuicaoHabitat"></div>
@@ -967,6 +995,30 @@
             </div>
           </div>
 
+        </div>
+      </div>
+
+      <!-- ====================================================
+         SEÇÃO SEGURANÇA E USO
+    ==================================================== -->
+      <div class="section-card">
+        <div class="section-header" onclick="toggleSection(this)">
+          <div class="section-header-left">
+            <div class="section-accent"></div>
+            <h2>🦺 Segurança e Uso Diário</h2>
+          </div>
+          <span class="section-toggle">▾</span>
+        </div>
+        <div class="section-body">
+          <div class="field-group">
+            <label class="field-label"><span class="icon">🍵</span> Como usar (Ex: Chás e Banhos)</label>
+            <textarea id="field-comoUsar" rows="3" placeholder="Descreva os preparos comuns..." oninput="updateProgress()"></textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label"><span class="icon">⚠️</span> Cuidados e Avisos</label>
+            <textarea id="field-cuidados" rows="3" placeholder="O que evitar..." oninput="updateProgress()"></textarea>
+            <div class="helper-text">Separe cada ponto de atenção via vírgula para listar nos cartões vermelhos separados.</div>
+          </div>
         </div>
       </div>
 
@@ -1188,6 +1240,14 @@
       const toStr = (v) => Array.isArray(v) ? v.join(', ') : (v || '');
       setField('referenciasFarmacologicas', toStr(d.referenciasFarmacologicas));
       setField('referenciaGeral', toStr(d.referenciaGeral));
+      setField('cuidados', toStr(d.cuidados));
+      setField('descobertasCientificas', d.descobertasCientificas);
+      setField('comoUsar', d.comoUsar);
+
+      // Galeria (Imagens Extras agora são array visual)
+      window._imagensExtras = Array.isArray(d.imagensExtras) ? [...d.imagensExtras] : [];
+      if (typeof window.renderExtraImgs === 'function') window.renderExtraImgs();
+
 
       // Keywords
       const kws = Array.isArray(d.keywords) ? d.keywords : (d.keywords ? [d.keywords] : []);
@@ -1260,6 +1320,10 @@
         farmacologia: getQuillHtml('farmacologia'),
         referenciasFarmacologicas: toList('referenciasFarmacologicas'),
         referenciaGeral: toList('referenciaGeral'),
+        imagensExtras: window._imagensExtras || [],
+        cuidados: toList('cuidados'),
+        descobertasCientificas: getVal('descobertasCientificas'),
+        comoUsar: getVal('comoUsar'),
         keywords: keywords,
         updatedAt: serverTimestamp(),
       };
@@ -1295,6 +1359,8 @@
       });
       window._chips = [];
       renderChips();
+      window._imagensExtras = [];
+      if (typeof window.renderExtraImgs === 'function') window.renderExtraImgs();
       document.getElementById('img-preview').style.display = 'none';
       document.getElementById('img-success').style.display = 'none';
       document.getElementById('img-upload-zone').classList.remove('has-file');
@@ -1356,6 +1422,129 @@
         showToast('Erro de rede no upload.', true);
       };
       xhr.send(formData);
+    };
+
+    // ── UPLOAD CLOUDINARY EXTRAS ──────────────────────────────
+    window._imagensExtras = [];
+    window.renderExtraImgs = function() {
+      const g = document.getElementById('extras-gallery');
+      if (!g) return;
+      g.innerHTML = '';
+      window._imagensExtras.forEach((url, i) => {
+        const div = document.createElement('div');
+        div.style.position = 'relative';
+        div.style.width = '84px'; 
+        div.style.height = '84px';
+        div.style.borderRadius = 'var(--radius-sm)';
+        div.style.overflow = 'hidden';
+        div.style.border = '2px solid var(--gray-200)';
+        
+        div.innerHTML = `
+          <img src="${url}" style="width:100%;height:100%;object-fit:cover;" />
+          
+          <div onclick="removeExtraImg(${i})" style="position:absolute;top:2px;right:2px;background:var(--red);color:white;border-radius:50%;width:20px;height:20px;text-align:center;line-height:18px;font-size:14px;cursor:pointer;font-weight:bold;box-shadow:0 2px 4px rgba(0,0,0,0.5);" title="Remover Foto">×</div>
+          
+          <!-- Controles de Ordem e Principal no rodapé da fotinha -->
+          <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);display:flex;justify-content:space-between;padding:4px;align-items:center;">
+             <!-- Setas Mover -->
+             <div style="display:flex;gap:6px;">
+               ${i > 0 ? `<div onclick="moveExtraImg(${i}, -1)" style="cursor:pointer;color:white;font-size:14px;" title="Mover para esquerda">◀</div>` : '<div style="width:14px;"></div>'}
+               ${i < window._imagensExtras.length - 1 ? `<div onclick="moveExtraImg(${i}, 1)" style="cursor:pointer;color:white;font-size:14px;" title="Mover para direita">▶</div>` : '<div style="width:14px;"></div>'}
+             </div>
+             <!-- Tornar Imagem Principal -->
+             <div onclick="makeMainImg(${i})" style="cursor:pointer;font-size:14px;" title="Tornar imagem principal">⭐</div>
+          </div>
+        `;
+        g.appendChild(div);
+      });
+    };
+    
+    // Move Esquerda (-1) / Direita (+1)
+    window.moveExtraImg = function(idx, dir) {
+      const arr = window._imagensExtras;
+      const target = idx + dir;
+      if (target >= 0 && target < arr.length) {
+        const temp = arr[idx];
+        arr[idx] = arr[target];
+        arr[target] = temp;
+        window.renderExtraImgs();
+        updateProgress();
+      }
+    };
+    
+    // Troca com a foto 2D Principal lá de cima
+    window.makeMainImg = function(idx) {
+      const mainField = document.getElementById('field-imagemUrl');
+      const currentMain = mainField.value;
+      const newMain = window._imagensExtras[idx];
+      
+      mainField.value = newMain;
+      document.getElementById('img-preview').src = newMain;
+      document.getElementById('img-preview').style.display = 'block';
+      document.getElementById('img-upload-zone').classList.add('has-file');
+      document.getElementById('img-success').style.display = 'flex';
+      
+      if (currentMain) {
+        window._imagensExtras[idx] = currentMain;
+      } else {
+        window._imagensExtras.splice(idx, 1);
+      }
+      window.renderExtraImgs();
+      updateProgress();
+      showToast('⭐ Definida como Principal!');
+    };
+    
+    window.removeExtraImg = function(idx) {
+      window._imagensExtras.splice(idx, 1);
+      window.renderExtraImgs();
+      updateProgress();
+    };
+
+    window.handleExtrasSelect = async function () {
+      const files = document.getElementById('extras-input').files;
+      if (!files.length) return;
+
+      const progressWrap = document.getElementById('extras-progress-wrap');
+      const progressFill = document.getElementById('extras-progress-fill');
+      const progressPct = document.getElementById('extras-pct');
+      progressWrap.style.display = 'block';
+      let totalFiles = files.length;
+      let uploadedCount = 0;
+      progressFill.style.width = '0%';
+      progressPct.textContent = '0%';
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_PRESET);
+
+        try {
+          // fetch simplificado para cada imagem extra
+          const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+            method: 'POST',
+            body: formData,
+          });
+          const data = await res.json();
+          if (data.secure_url) {
+            window._imagensExtras.push(data.secure_url);
+            uploadedCount++;
+            const pct = Math.round((uploadedCount / totalFiles) * 100);
+            progressFill.style.width = pct + '%';
+            progressPct.textContent = pct + '%';
+          }
+        } catch (e) {
+            showToast('Erro ao subir imagem extra', true);
+        }
+      }
+      setTimeout(() => {
+        progressWrap.style.display = 'none';
+        progressFill.style.width = '0%';
+        window.renderExtraImgs();
+        updateProgress();
+        document.getElementById('extras-input').value = ''; // reseta
+        showToast('📷 Fotos extras enviadas!', '');
+      }, 500);
     };
 
     window.handleModelSelect = async function () {
