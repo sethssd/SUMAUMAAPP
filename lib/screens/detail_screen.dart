@@ -21,6 +21,7 @@ class _DetailScreenState extends State<DetailScreen>
   bool _isLoading = true;
 
   final Map<String, bool> _expandedTopics = {};
+  String? _selectedImageUrl;
 
   @override
   void initState() {
@@ -112,118 +113,181 @@ class _DetailScreenState extends State<DetailScreen>
   }
 
   // ══════════════════════════════════════════════════════════════
-  //  HERO IMAGE CARD — imagem arredondada no topo
+  //  NOVO HERO HEADER (FASE 1)
   // ══════════════════════════════════════════════════════════════
-  Widget _buildHeroImageCard(Map<String, dynamic> data) {
-    final String imagemUrl = data['imagemUrl'] ?? '';
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      height: 260,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: imagemUrl.isNotEmpty
-            ? Image.network(
-                imagemUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: Center(
-                    child: Icon(
-                      Icons.eco_rounded,
-                      size: 80,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.3),
-                    ),
-                  ),
-                ),
-              )
-            : Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: Center(
-                  child: Icon(
-                    Icons.eco_rounded,
-                    size: 80,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.3),
-                  ),
-                ),
-              ),
-      ),
-    );
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  //  INFO HEADER — Nome, nome científico, descrição curta
-  // ══════════════════════════════════════════════════════════════
-  Widget _buildInfoHeader(Map<String, dynamic> data) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildNewHeroHeader(Map<String, dynamic> data, bool isDark, BuildContext context) {
     final String nome = data['nome'] ?? 'Nome desconhecido';
     final String nomeCientifico = data['nomeCientifico'] ?? '';
-    final String descricaoCurta =
-        data['descricaoCurta'] ?? data['descricao'] ?? '';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            nome,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : const Color(0xFF1A1A2E),
-              letterSpacing: -0.5,
+    // Extraindo a imagem principal e outras imagens caso existam
+    final String baseImageUrl = data['imagemUrl'] ?? '';
+    final List<String> imagensExtras = _parseListField(data['imagensExtras'] ?? data['fotos'] ?? data['imagens']);
+    
+    // Unindo todas as imagens num set para evitar duplicações
+    final List<String> todasImagens = [];
+    if (baseImageUrl.isNotEmpty) todasImagens.add(baseImageUrl);
+    for (String img in imagensExtras) {
+      if (img.isNotEmpty && !todasImagens.contains(img)) {
+        todasImagens.add(img);
+      }
+    }
+
+    // --- MOCK TEMPORÁRIO REMOVIDO ---
+    // Agora o painel provê as imagens extras diretamente.
+
+    // Define qual imagem está sendo exibida no fundo
+    final String displayUrl = _selectedImageUrl ?? (todasImagens.isNotEmpty ? todasImagens.first : '');
+
+    // Define quais são as "outras imagens" (as que ficarão pequenas na lateral)
+    // Ao clicar em uma, ela vira a principal, e a antiga principal desce para essa lista.
+    final List<String> imagensLaterais = todasImagens.where((url) => url != displayUrl).toList();
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Imagem Principal
+        displayUrl.isNotEmpty
+            ? Image.network(displayUrl, fit: BoxFit.cover)
+            : Container(color: Colors.green.shade900),
+
+        // Gradiente inferior para mesclar com o fundo
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.1),
+                  Colors.black.withValues(alpha: 0.5),
+                  isDark ? SumaColors.darkBg : const Color(0xFFF6FBF7),
+                ],
+                stops: const [0.3, 0.6, 0.85, 1.0],
+              ),
             ),
           ),
-          if (nomeCientifico.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              nomeCientifico,
-              style: TextStyle(
-                fontSize: 17,
-                fontStyle: FontStyle.italic,
-                color: SumaColors.greenBright,
-                fontWeight: FontWeight.w500,
+        ),
+
+        // Botões do Topo (Back, Bookmark, Home)
+        Positioned(
+          top: MediaQuery.of(context).padding.top + 10,
+          left: 16,
+          right: 16,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Botão Voltar
+              _buildTopControlButton(Icons.arrow_back_ios_new_rounded, () => Navigator.pop(context)),
+              // Botões Direita
+              Row(
+                children: [
+                  _buildTopControlButton(Icons.bookmark_border_rounded, () { /* Salvar */ }),
+                  const SizedBox(width: 8),
+                  _buildTopControlButton(Icons.home_outlined, () => Navigator.popUntil(context, (route) => route.isFirst)),
+                ],
               ),
+            ],
+          ),
+        ),
+
+        // Galeria Lateral (Troca com a tela principal)
+        if (imagensLaterais.isNotEmpty)
+          Positioned(
+            right: 30, // Movido mais à esquerda, acima da aba 'Referências'
+            bottom: 24,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: imagensLaterais.take(4).map((url) {
+                // Aqui não passamos isSelected porque todas na lateral são não selecionadas
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildSelectableThumbnail(url, false), // Falsa pois a principal não tá aqui
+                );
+              }).toList(),
             ),
-          ],
-          if (descricaoCurta.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              descricaoCurta,
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.7)
-                    : const Color(0xFF1A1A2E).withValues(alpha: 0.7),
+          ),
+
+        // Textos Inferiores (Título e Subtítulo)
+        Positioned(
+          bottom: 24,
+          left: 20,
+          right: 20,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                nome,
+                style: const TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
+                  shadows: [Shadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 2))],
+                ),
               ),
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-            ),
+              if (nomeCientifico.isNotEmpty)
+                Text(
+                  nomeCientifico,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.white70,
+                    shadows: [Shadow(color: Colors.black45, blurRadius: 10, offset: Offset(0, 2))],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopControlButton(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.35),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 22),
+      ),
+    );
+  }
+
+  Widget _buildSelectableThumbnail(String url, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        if (mounted) {
+          setState(() {
+            _selectedImageUrl = url;
+          });
+        }
+      },
+      child: Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade800,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? SumaColors.greenBright : Colors.white.withValues(alpha: 0.2), 
+            width: isSelected ? 2.5 : 1.5,
+          ),
+          boxShadow: [
+            if (isSelected) BoxShadow(color: SumaColors.greenBright.withValues(alpha: 0.5), blurRadius: 8),
+            const BoxShadow(color: Colors.black45, blurRadius: 5)
           ],
-        ],
+          image: url.isNotEmpty ? DecorationImage(image: NetworkImage(url), fit: BoxFit.cover) : null,
+        ),
       ),
     );
   }
 
   // ══════════════════════════════════════════════════════════════
-  //  PREMIUM TAB BAR
+  //  PREMIUM TAB BAR (FASE 2)
   // ══════════════════════════════════════════════════════════════
   Widget _buildPremiumTabBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -232,7 +296,7 @@ class _DetailScreenState extends State<DetailScreen>
       margin: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
         color: isDark
-            ? Colors.white.withValues(alpha: 0.06)
+            ? Colors.white.withValues(alpha: 0.05)
             : SumaColors.greenLight.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(14),
       ),
@@ -240,7 +304,7 @@ class _DetailScreenState extends State<DetailScreen>
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
-          color: isDark ? SumaColors.darkSurface : Colors.white,
+          color: isDark ? const Color(0xFF142F23) : Colors.white,
           borderRadius: BorderRadius.circular(11),
           boxShadow: [
             BoxShadow(
@@ -268,7 +332,7 @@ class _DetailScreenState extends State<DetailScreen>
         tabs: const [
           Tab(text: 'Geral'),
           Tab(text: 'Científico'),
-          Tab(text: 'Referências'),
+          Tab(text: 'Artigos'),
         ],
       ),
     );
@@ -491,7 +555,7 @@ class _DetailScreenState extends State<DetailScreen>
   }
 
   // ══════════════════════════════════════════════════════════════
-  //  3D MODEL BUTTON
+  //  3D MODEL BUTTON (FASE 4)
   // ══════════════════════════════════════════════════════════════
   Widget _build3DButton(String modelo3dUrl, String nome) {
     return Container(
@@ -499,7 +563,7 @@ class _DetailScreenState extends State<DetailScreen>
       child: SizedBox(
         width: double.infinity,
         height: 52,
-        child: ElevatedButton.icon(
+        child: ElevatedButton(
           onPressed: () {
             Navigator.push(
               context,
@@ -509,25 +573,353 @@ class _DetailScreenState extends State<DetailScreen>
               ),
             );
           },
-          icon: const Icon(Icons.view_in_ar_rounded, size: 22),
-          label: const Text(
-            'Ver Modelo 3D',
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF16593A), // Verde de destaque do modelo 3D
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            elevation: 0,
+          ),
+          child: const Text(
+            'Modelo 3D',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.3,
             ),
           ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: SumaColors.greenBright,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            elevation: 4,
-            shadowColor: SumaColors.greenBright.withValues(alpha: 0.5),
-          ),
         ),
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  AUDIO PLAYER MOCK (FASE 2)
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildAudioPlayer(String nomeDaPlanta) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : SumaColors.greenLight,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Play Button
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: SumaColors.greenBright,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: SumaColors.greenBright.withValues(alpha: 0.4),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 16),
+          // Player Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Papo de Feira: "O Poder do $nomeDaPlanta"',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
+                    color: isDark ? Colors.white.withValues(alpha: 0.95) : const Color(0xFF1A1A2E),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text('1X', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: 0.4, // progress mock simulado
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: SumaColors.greenBright,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('29:00', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  SCIENCE CARD (FASE 3)
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildScienceCard(String content) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF141A14) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.amber.withValues(alpha: 0.05) : Colors.amber.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('🔎', style: TextStyle(fontSize: 20)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'O que a ciência descobriu?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.amber.shade400 : Colors.amber.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            content,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: isDark ? Colors.white.withValues(alpha: 0.8) : Colors.grey.shade800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  SAFETY SECTION (FASE 3)
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildSafetySection(String comoUsarText, List<String> cuidadosList) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.spa_outlined, color: Colors.white70, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              'Como usar com segurança?',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        if (comoUsarText.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F1C14) : Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: SumaColors.greenBright,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Chás e Banhos',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: SumaColors.greenBright,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        comoUsarText,
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.4,
+                          color: isDark ? Colors.white70 : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        if (cuidadosList.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(bottom: 24),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A1212) : Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD32F2F),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Cuidado com o Óleo',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFFD32F2F),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        cuidadosList.join('\n'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          height: 1.4,
+                          color: isDark ? Colors.white70 : Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  //  LOCATION SECTION (FASE 4)
+  // ══════════════════════════════════════════════════════════════
+  Widget _buildLocationSection(String text) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.green.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.location_on_outlined, color: Colors.white70, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Onde Encontrar?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            text.isNotEmpty ? text : 'É uma planta muito comum e fácil de achar nas feiras de Santarém, sendo cultivada por produtores locais da nossa região.',
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: isDark ? Colors.white.withValues(alpha: 0.75) : Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(3, (index) {
+              return Expanded(
+                child: Container(
+                  height: 60,
+                  margin: EdgeInsets.only(right: index < 2 ? 12 : 0),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFFFFFFFF), Color(0xFFCCCCCC)],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
       ),
     );
   }
@@ -543,27 +935,26 @@ class _DetailScreenState extends State<DetailScreen>
     final String usosValor = data['usosEValorEconomico'] ?? '';
     final String taxonomia = data['taxonomiaNomesPopulares'] ?? '';
 
-    // Novos campos (se existirem)
-    final String descricaoSimples = data['descricaoSimples'] ?? '';
+    // Novos campos (se existirem) e padronizados com admin
+    final String descobertas = data['descobertasCientificas'] ?? data['descricaoSimples'] ?? '';
     final beneficios = _parseListField(data['beneficios']);
     final String comoUsar = data['comoUsar'] ?? '';
     final cuidados = _parseListField(data['cuidados']);
     final nivelEvidencia = data['nivelEvidencia'] ?? 0;
     final numeroEstudos = data['numeroEstudos'] ?? 0;
+    final String nome = data['nome'] ?? 'Limãozinho';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // "O que é?" — se houver descrição simples
-          if (descricaoSimples.isNotEmpty)
-            _buildPremiumCard(
-              icon: Icons.lightbulb_outline_rounded,
-              title: 'O QUE É?',
-              accentColor: Colors.blue,
-              content: descricaoSimples,
-            ),
+          // Audio Player Adicionado (Fase 2)
+          _buildAudioPlayer(nome),
+
+          // "O que a ciência descobriu?" (Fase 3)
+          if (descobertas.isNotEmpty)
+            _buildScienceCard(descobertas),
 
           // Descrição principal
           if (descricao.isNotEmpty)
@@ -574,14 +965,8 @@ class _DetailScreenState extends State<DetailScreen>
               content: descricao,
             ),
 
-          // Distribuição e Habitat
-          if (distribuicao.isNotEmpty)
-            _buildPremiumCard(
-              icon: Icons.map_rounded,
-              title: 'DISTRIBUIÇÃO E HABITAT',
-              accentColor: const Color(0xFF2D6A4F),
-              content: distribuicao,
-            ),
+          // Seção "Onde Encontrar?" (Fase 4)
+          _buildLocationSection(distribuicao),
 
           // Taxonomia / Nomes Populares
           if (taxonomia.isNotEmpty)
@@ -652,56 +1037,9 @@ class _DetailScreenState extends State<DetailScreen>
               ),
             ),
 
-          // Como usar
-          if (comoUsar.isNotEmpty)
-            _buildPremiumCard(
-              icon: Icons.restaurant_outlined,
-              title: 'COMO USAR?',
-              accentColor: Colors.orange,
-              content: comoUsar,
-            ),
-
-          // Cuidados
-          if (cuidados.isNotEmpty)
-            _buildPremiumCard(
-              icon: Icons.warning_amber_rounded,
-              title: 'CUIDADOS',
-              accentColor: Colors.red,
-              customContent: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: cuidados
-                    .map(
-                      (c) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              color: Colors.red,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                c,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.75)
-                                      : const Color(
-                                          0xFF1A1A2E,
-                                        ).withValues(alpha: 0.75),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
+          // Seção de Segurança (Fase 3)
+          if (comoUsar.isNotEmpty || cuidados.isNotEmpty)
+            _buildSafetySection(comoUsar, cuidados),
 
           // Nível de Evidência
           if (nivelEvidencia > 0)
@@ -1231,38 +1569,23 @@ class _DetailScreenState extends State<DetailScreen>
           Expanded(
             child: CustomScrollView(
               slivers: [
-                // AppBar transparente
+                // Hero Header Imersivo
                 SliverAppBar(
-                  expandedHeight: 0,
-                  pinned: true,
-                  backgroundColor: isDark
-                      ? SumaColors.darkBg
-                      : const Color(0xFFF6FBF7),
-                  foregroundColor: isDark ? Colors.white : SumaColors.greenDeep,
-                  iconTheme: IconThemeData(
-                    color: isDark ? Colors.white : SumaColors.greenDeep,
-                  ),
+                  expandedHeight: 380,
+                  pinned: false,
+                  backgroundColor: Colors.transparent,
+                  automaticallyImplyLeading: false,
                   elevation: 0,
-                  title: Text(
-                    nome,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : SumaColors.greenDeep,
-                    ),
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: _buildNewHeroHeader(data, isDark, context),
                   ),
-                  centerTitle: true,
                 ),
 
-                // Conteúdo Principal
+                // Conteúdo Principal (Navegação Tabs)
                 SliverToBoxAdapter(
                   child: Column(
                     children: [
-                      const SizedBox(height: 8),
-                      // Imagem arredondada (Hero Card)
-                      _buildHeroImageCard(data),
-                      // Info: Nome, nome científico, descrição
-                      _buildInfoHeader(data),
+                      const SizedBox(height: 20),
                       // Tab Bar Premium
                       _buildPremiumTabBar(),
                       const SizedBox(height: 8),
