@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'dart:io'; // Para usar o tipo File
 
 class EditPlantScreen extends StatefulWidget {
   final String? plantaId;
@@ -22,6 +21,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
   final _descricaoCurtaController = TextEditingController();
   final _imagemUrlController = TextEditingController();
   final _modelo3dUrlController = TextEditingController();
+  final _audioUrlController = TextEditingController();
   final _taxonomiaController = TextEditingController();
   final _descricaoController = TextEditingController();
   final _distribuicaoHabitatController = TextEditingController();
@@ -39,6 +39,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
   // 2. NOVAS VARIÁVEIS DE ESTADO
   bool _isUploadingImage = false;
   bool _isUploadingModel = false;
+  bool _isUploadingAudio = false;
 
   // 3. INICIALIZAR O CLOUDINARY
   final cloudinary = CloudinaryPublic(
@@ -82,6 +83,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
         _descricaoCurtaController.text = data['descricaoCurta'] ?? '';
         _imagemUrlController.text = data['imagemUrl'] ?? '';
         _modelo3dUrlController.text = data['modelo3dUrl'] ?? '';
+        _audioUrlController.text = data['audioUrl'] ?? '';
         _taxonomiaController.text = data['taxonomiaNomesPopulares'] ?? '';
         _descricaoController.text =
             data['descricao'] ?? data['descricaoCompleta'] ?? '';
@@ -103,7 +105,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
     setState(() => _isLoading = false);
   }
 
-  // 4. FUNÇÃO: UPLOAD DE IMAGEM 2D
+  // 4. FUNÇÃO: UPLOAD DE IMAGEM 2D (Web-safe)
   Future<void> _pickAndUploadImage() async {
     setState(() => _isUploadingImage = true);
     try {
@@ -115,9 +117,12 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
         return;
       }
 
+      final bytes = await image.readAsBytes();
+
       CloudinaryResponse response = await cloudinary.uploadFile(
-        CloudinaryFile.fromFile(
-          image.path,
+        CloudinaryFile.fromByteData(
+          bytes.buffer.asByteData(),
+          identifier: image.name,
           resourceType: CloudinaryResourceType.Image,
         ),
       );
@@ -129,31 +134,35 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       });
     } catch (e) {
       setState(() => _isUploadingImage = false);
-      debugPrint("Erro no upload da imagem: $e");
+      debugPrint("Erro no upload da imagem: \$e");
     }
   }
 
-  // 5. UPLOAD DE MODELO 3D (.GLB)
+  // 5. UPLOAD DE MODELO 3D (.GLB) (Web-safe)
   Future<void> _pickAndUploadModel() async {
     setState(() => _isUploadingModel = true);
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.any, // Ou limite para .glb se souber a extensão
+        type: FileType.any, // .glb
+        withData: true, // OBRIGATÓRIO PARA O WEB
       );
 
-      if (result == null || result.files.single.path == null) {
+      if (result == null || (result.files.single.bytes == null && result.files.single.path == null)) {
         setState(() => _isUploadingModel = false);
         return;
       }
 
-      File file = File(result.files.single.path!);
+      final fileBytes = result.files.single.bytes;
+      final fileName = result.files.single.name;
+      
+      CloudinaryFile cloudinaryFile;
+      if (fileBytes != null) {
+        cloudinaryFile = CloudinaryFile.fromByteData(fileBytes.buffer.asByteData(), identifier: fileName, resourceType: CloudinaryResourceType.Raw);
+      } else {
+        cloudinaryFile = CloudinaryFile.fromFile(result.files.single.path!, resourceType: CloudinaryResourceType.Raw);
+      }
 
-      CloudinaryResponse response = await cloudinary.uploadFile(
-        CloudinaryFile.fromFile(
-          file.path,
-          resourceType: CloudinaryResourceType.Raw, // .glb é um arquivo "Raw"
-        ),
-      );
+      CloudinaryResponse response = await cloudinary.uploadFile(cloudinaryFile);
 
       setState(() {
         _modelo3dUrlController.text = response.secureUrl;
@@ -161,7 +170,43 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       });
     } catch (e) {
       setState(() => _isUploadingModel = false);
-      debugPrint("Erro no upload do modelo: $e");
+      debugPrint("Erro no upload do modelo: \$e");
+    }
+  }
+
+  // 5.5 UPLOAD DE ÁUDIO (.MP3) (Web-safe)
+  Future<void> _pickAndUploadAudio() async {
+    setState(() => _isUploadingAudio = true);
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.audio,
+        withData: true,
+      );
+
+      if (result == null || (result.files.single.bytes == null && result.files.single.path == null)) {
+        setState(() => _isUploadingAudio = false);
+        return;
+      }
+
+      final fileBytes = result.files.single.bytes;
+      final fileName = result.files.single.name;
+      
+      CloudinaryFile cloudinaryFile;
+      if (fileBytes != null) {
+        cloudinaryFile = CloudinaryFile.fromByteData(fileBytes.buffer.asByteData(), identifier: fileName, resourceType: CloudinaryResourceType.Video);
+      } else {
+        cloudinaryFile = CloudinaryFile.fromFile(result.files.single.path!, resourceType: CloudinaryResourceType.Video);
+      }
+
+      CloudinaryResponse response = await cloudinary.uploadFile(cloudinaryFile);
+
+      setState(() {
+        _audioUrlController.text = response.secureUrl;
+        _isUploadingAudio = false;
+      });
+    } catch (e) {
+      setState(() => _isUploadingAudio = false);
+      debugPrint("Erro no upload do áudio: \$e");
     }
   }
 
@@ -187,6 +232,7 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       'descricaoCurta': _descricaoCurtaController.text,
       'imagemUrl': _imagemUrlController.text,
       'modelo3dUrl': _modelo3dUrlController.text,
+      'audioUrl': _audioUrlController.text,
       'taxonomiaNomesPopulares': _taxonomiaController.text,
       'descricao': _descricaoController.text,
       'distribuicaoHabitat': _distribuicaoHabitatController.text,
@@ -328,6 +374,28 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                       ),
                       readOnly: _isUploadingModel,
                     ),
+
+                    // CAMPO DE UPLOAD DE ÁUDIO
+                    TextFormField(
+                      controller: _audioUrlController,
+                      decoration: InputDecoration(
+                        labelText: 'URL do Áudio do Podcast (.mp3)',
+                        // Ícone de Upload
+                        suffixIcon: _isUploadingAudio
+                            ? const Padding(
+                                padding: EdgeInsets.all(10.0),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.audio_file),
+                                onPressed: _pickAndUploadAudio,
+                              ),
+                      ),
+                      readOnly: _isUploadingAudio,
+                    ),
+
                     const Divider(height: 30),
 
                     // ... (resto dos campos de texto)

@@ -909,6 +909,32 @@
             <input type="text" id="field-modelo3dUrl" style="display:none" />
           </div>
 
+          <!-- Áudio do Podcast -->
+          <div class="field-group">
+            <label class="field-label"><span class="icon">🎧</span> Áudio do Podcast (.mp3)</label>
+            <div class="model-upload-widget" id="audio-upload-widget"
+              onclick="document.getElementById('audio-input').click()">
+              <span class="model-icon" id="audio-icon">🎧</span>
+              <div class="model-info">
+                <div class="model-name" id="audio-name">Selecionar arquivo .mp3</div>
+                <div class="model-sub" id="audio-sub">Clique para escolher o áudio do podcast</div>
+              </div>
+              <span>›</span>
+            </div>
+            <input type="file" id="audio-input" accept=".mp3,audio/*" style="display:none"
+              onchange="handleAudioSelect()" />
+            <div class="upload-progress-wrap" id="audio-progress-wrap">
+              <div class="upload-progress-label">
+                <span>Enviando áudio...</span><span id="audio-pct">0%</span>
+              </div>
+              <div class="upload-progress-track">
+                <div class="upload-progress-fill" id="audio-progress-fill"></div>
+              </div>
+            </div>
+            <div class="upload-success" id="audio-success">✅ Áudio carregado com sucesso</div>
+            <input type="text" id="field-audioUrl" style="display:none" />
+          </div>
+
           <!-- Imagens Extras (Miniaturas) -->
           <div class="field-group">
             <label class="field-label"><span class="icon">🖼️</span> Galeria Lateral (Outras Fotos)</label>
@@ -1273,6 +1299,16 @@
         document.getElementById('model-success').style.display = 'flex';
       }
 
+      // Áudio do Podcast
+      if (d.audioUrl) {
+        document.getElementById('field-audioUrl').value = d.audioUrl;
+        document.getElementById('audio-name').textContent = 'Áudio carregado';
+        document.getElementById('audio-sub').textContent = 'Pronto para tocar no app';
+        document.getElementById('audio-upload-widget').classList.add('has-file');
+        document.getElementById('audio-icon').textContent = '✅';
+        document.getElementById('audio-success').style.display = 'flex';
+      }
+
       updateProgress();
     }
 
@@ -1312,6 +1348,7 @@
         descricaoCurta: getVal('descricaoCurta'),
         imagemUrl: getVal('imagemUrl'),
         modelo3dUrl: getVal('modelo3dUrl'),
+        audioUrl: getVal('audioUrl'),
         taxonomiaNomesPopulares: getQuillHtml('taxonomia'),
         descricao: getQuillHtml('descricao'),
         distribuicaoHabitat: getQuillHtml('distribuicaoHabitat'),
@@ -1589,6 +1626,49 @@
       xhr.send(formData);
     };
 
+    window.handleAudioSelect = async function () {
+      const file = document.getElementById('audio-input').files[0];
+      if (!file) return;
+
+      document.getElementById('audio-name').textContent = file.name;
+      document.getElementById('audio-sub').textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
+
+      const progressWrap = document.getElementById('audio-progress-wrap');
+      const progressFill = document.getElementById('audio-progress-fill');
+      const progressPct = document.getElementById('audio-pct');
+      const successEl = document.getElementById('audio-success');
+      progressWrap.style.display = 'block';
+      successEl.style.display = 'none';
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_PRESET);
+
+      const xhr = new XMLHttpRequest();
+      // Áudio no Cloudinary sobe na rota /video/upload
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`);
+      xhr.upload.onprogress = (e) => {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        progressFill.style.width = pct + '%';
+        progressPct.textContent = pct + '%';
+      };
+      xhr.onload = () => {
+        progressWrap.style.display = 'none';
+        const res = JSON.parse(xhr.responseText);
+        if (res.secure_url) {
+          document.getElementById('field-audioUrl').value = res.secure_url;
+          document.getElementById('audio-upload-widget').classList.add('has-file');
+          document.getElementById('audio-icon').textContent = '✅';
+          successEl.style.display = 'flex';
+          showToast('🎧 Áudio enviado!');
+        } else {
+          showToast('Erro no upload do áudio.', true);
+        }
+      };
+      xhr.onerror = () => { progressWrap.style.display = 'none'; showToast('Erro de rede.', true); };
+      xhr.send(formData);
+    };
+
     // ── HELPERS ───────────────────────────────────────────────
     function showApp() {
       document.getElementById('login-screen').style.display = 'none';
@@ -1663,7 +1743,7 @@
     const TRACKED_INPUT_FIELDS = [
       'field-nome', 'field-nomeCientifico', 'field-descricaoCurta',
       'field-referenciasFarmacologicas', 'field-referenciaGeral',
-      'field-imagemUrl', 'field-modelo3dUrl',
+      'field-imagemUrl', 'field-modelo3dUrl', 'field-audioUrl'
     ];
 
     window.updateProgress = function () {

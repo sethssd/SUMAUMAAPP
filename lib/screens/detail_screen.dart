@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:just_audio/just_audio.dart';
 import '../utils/app_theme.dart';
 
 class DetailScreen extends StatefulWidget {
@@ -595,92 +596,13 @@ class _DetailScreenState extends State<DetailScreen>
   }
 
   // ══════════════════════════════════════════════════════════════
-  //  AUDIO PLAYER MOCK (FASE 2)
+  //  AUDIO PLAYER (FASE 8)
   // ══════════════════════════════════════════════════════════════
-  Widget _buildAudioPlayer(String nomeDaPlanta) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.05) : SumaColors.greenLight,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Play Button
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: SumaColors.greenBright,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: SumaColors.greenBright.withValues(alpha: 0.4),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
-          ),
-          const SizedBox(width: 16),
-          // Player Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Papo de Feira: "O Poder do $nomeDaPlanta"',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.2,
-                    color: isDark ? Colors.white.withValues(alpha: 0.95) : const Color(0xFF1A1A2E),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text('1X', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        alignment: Alignment.centerLeft,
-                        child: FractionallySizedBox(
-                          widthFactor: 0.4, // progress mock simulado
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: SumaColors.greenBright,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text('29:00', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+  Widget _buildAudioPlayer(String nomeDaPlanta, {String? audioUrl}) {
+    if (audioUrl == null || audioUrl.trim().isEmpty) {
+      return const SizedBox.shrink(); // Planta sem áudio atrelado
+    }
+    return SumaAudioPlayer(audioUrl: audioUrl, title: 'Papo de Feira: "O Poder do $nomeDaPlanta"');
   }
 
   // ══════════════════════════════════════════════════════════════
@@ -943,14 +865,15 @@ class _DetailScreenState extends State<DetailScreen>
     final nivelEvidencia = data['nivelEvidencia'] ?? 0;
     final numeroEstudos = data['numeroEstudos'] ?? 0;
     final String nome = data['nome'] ?? 'Limãozinho';
+    final String audioUrl = data['audioUrl'] ?? '';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Audio Player Adicionado (Fase 2)
-          _buildAudioPlayer(nome),
+          // Audio Player Funcional (Fase 8)
+          _buildAudioPlayer(nome, audioUrl: audioUrl),
 
           // "O que a ciência descobriu?" (Fase 3)
           if (descobertas.isNotEmpty)
@@ -1617,6 +1540,183 @@ class _DetailScreenState extends State<DetailScreen>
                 child: _build3DButton(modelo3dUrl, nome),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  COMPONENTE SUMA AUDIO PLAYER (FASE 8)
+// ══════════════════════════════════════════════════════════════
+class SumaAudioPlayer extends StatefulWidget {
+  final String audioUrl;
+  final String title;
+
+  const SumaAudioPlayer({super.key, required this.audioUrl, required this.title});
+
+  @override
+  State<SumaAudioPlayer> createState() => _SumaAudioPlayerState();
+}
+
+class _SumaAudioPlayerState extends State<SumaAudioPlayer> {
+  late AudioPlayer _audioPlayer;
+  bool isPlaying = false;
+  Duration duration = Duration.zero;
+  Duration position = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+
+    _audioPlayer.playerStateStream.listen((state) {
+      if (mounted) {
+        setState(() {
+          isPlaying = state.playing;
+        });
+      }
+    });
+
+    _audioPlayer.durationStream.listen((newDuration) {
+      if (mounted) {
+        setState(() {
+          duration = newDuration ?? Duration.zero;
+        });
+      }
+    });
+
+    _audioPlayer.positionStream.listen((newPosition) {
+      if (mounted) {
+        setState(() {
+          position = newPosition;
+        });
+      }
+    });
+
+    try {
+      _audioPlayer.setUrl(widget.audioUrl);
+    } catch (e) {
+      debugPrint("Erro ao precarregar áudio: \$e");
+    }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  void _seekTo(double value) {
+    if (duration != Duration.zero) {
+      final newPosition = Duration(milliseconds: value.toInt());
+      _audioPlayer.seek(newPosition);
+    }
+  }
+
+  String _formatDuration(Duration d) {
+    if (d.inMilliseconds <= 0) return "00:00";
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return "$minutes:$seconds";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : SumaColors.greenLight,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Play/Pause Button
+          GestureDetector(
+            onTap: () {
+              if (isPlaying) {
+                setState(() => isPlaying = false); // Resposta imediata na UI
+                _audioPlayer.pause();
+              } else {
+                setState(() => isPlaying = true); // Resposta imediata na UI
+                _audioPlayer.play(); // O just_audio usa play nativamente sobre o URL carregado
+              }
+            },
+            child: Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: SumaColors.greenBright,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: SumaColors.greenBright.withValues(alpha: 0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Player Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  widget.title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.2,
+                    color: isDark ? Colors.white.withValues(alpha: 0.95) : const Color(0xFF1A1A2E),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(_formatDuration(position), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 4,
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                          activeTrackColor: SumaColors.greenBright,
+                          inactiveTrackColor: isDark ? Colors.white.withValues(alpha: 0.2) : Colors.grey.shade200,
+                          thumbColor: SumaColors.greenBright,
+                        ),
+                        child: Slider(
+                          min: 0,
+                          max: duration.inMilliseconds > 0 ? duration.inMilliseconds.toDouble() : 1,
+                          value: position.inMilliseconds.toDouble().clamp(0, duration.inMilliseconds > 0 ? duration.inMilliseconds.toDouble() : 1).toDouble(),
+                          onChanged: _seekTo,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(_formatDuration(duration), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
