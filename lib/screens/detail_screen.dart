@@ -5,6 +5,7 @@ import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import '../utils/app_theme.dart';
 
 class DetailScreen extends StatefulWidget {
@@ -1562,6 +1563,7 @@ class SumaAudioPlayer extends StatefulWidget {
 class _SumaAudioPlayerState extends State<SumaAudioPlayer> {
   late AudioPlayer _audioPlayer;
   bool isPlaying = false;
+  ProcessingState _processingState = ProcessingState.idle;
   Duration duration = Duration.zero;
   Duration position = Duration.zero;
 
@@ -1574,6 +1576,7 @@ class _SumaAudioPlayerState extends State<SumaAudioPlayer> {
       if (mounted) {
         setState(() {
           isPlaying = state.playing;
+          _processingState = state.processingState;
         });
       }
     });
@@ -1595,9 +1598,16 @@ class _SumaAudioPlayerState extends State<SumaAudioPlayer> {
     });
 
     try {
-      _audioPlayer.setUrl(widget.audioUrl);
+      _audioPlayer.setAudioSource(LockCachingAudioSource(
+        Uri.parse(widget.audioUrl),
+        tag: MediaItem(
+          id: widget.audioUrl,
+          album: "Sumaúma",
+          title: "Papo de Feira: ${widget.title}",
+        ),
+      ));
     } catch (e) {
-      debugPrint("Erro ao precarregar áudio: \$e");
+      debugPrint("Erro ao precarregar áudio via Cache: \$e");
     }
   }
 
@@ -1663,11 +1673,19 @@ class _SumaAudioPlayerState extends State<SumaAudioPlayer> {
                   ),
                 ],
               ),
-              child: Icon(
-                isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
+              child: _processingState == ProcessingState.loading || _processingState == ProcessingState.buffering
+                  ? const Padding(
+                      padding: EdgeInsets.all(12.0),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : Icon(
+                      isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
             ),
           ),
           const SizedBox(width: 16),
