@@ -76,23 +76,6 @@ class _DetailScreenState extends State<DetailScreen>
     return [];
   }
 
-  String _getEvidenceLevelText(int nivel) {
-    switch (nivel) {
-      case 5:
-        return "Evidência Muito Alta";
-      case 4:
-        return "Evidência Alta";
-      case 3:
-        return "Evidência Moderada";
-      case 2:
-        return "Evidência Baixa";
-      case 1:
-        return "Uso Tradicional";
-      default:
-        return "Sem Classificação";
-    }
-  }
-
   String _formatChemicalName(String key) {
     return key
         .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(1)}')
@@ -601,13 +584,13 @@ class _DetailScreenState extends State<DetailScreen>
   // ══════════════════════════════════════════════════════════════
   Widget _buildAudioPlayer(String nomeDaPlanta, {String? audioUrl}) {
     if (audioUrl == null || audioUrl.trim().isEmpty) {
-      return const SizedBox.shrink(); // Planta sem áudio atrelado
+      return const SizedBox.shrink();
     }
     return SumaAudioPlayer(audioUrl: audioUrl, title: 'Papo de Feira: "O Poder do $nomeDaPlanta"');
   }
 
   // ══════════════════════════════════════════════════════════════
-  //  SCIENCE CARD (FASE 3)
+  //  SCIENCE CARD
   // ══════════════════════════════════════════════════════════════
   Widget _buildScienceCard(String content) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -655,11 +638,10 @@ class _DetailScreenState extends State<DetailScreen>
   }
 
   // ══════════════════════════════════════════════════════════════
-  //  SAFETY SECTION (FASE 3)
+  //  SAFETY SECTION
   // ══════════════════════════════════════════════════════════════
   Widget _buildSafetySection(String comoUsarText, List<String> cuidadosList) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -678,7 +660,6 @@ class _DetailScreenState extends State<DetailScreen>
           ],
         ),
         const SizedBox(height: 16),
-
         if (comoUsarText.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -726,7 +707,6 @@ class _DetailScreenState extends State<DetailScreen>
               ],
             ),
           ),
-
         if (cuidadosList.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(bottom: 24),
@@ -779,11 +759,10 @@ class _DetailScreenState extends State<DetailScreen>
   }
 
   // ══════════════════════════════════════════════════════════════
-  //  LOCATION SECTION (FASE 4)
+  //  LOCATION SECTION
   // ══════════════════════════════════════════════════════════════
   Widget _buildLocationSection(String text) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       padding: const EdgeInsets.all(16),
@@ -822,26 +801,6 @@ class _DetailScreenState extends State<DetailScreen>
               color: isDark ? Colors.white.withValues(alpha: 0.75) : Colors.grey.shade700,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(3, (index) {
-              return Expanded(
-                child: Container(
-                  height: 60,
-                  margin: EdgeInsets.only(right: index < 2 ? 12 : 0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0xFFFFFFFF), Color(0xFFCCCCCC)],
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
         ],
       ),
     );
@@ -857,15 +816,11 @@ class _DetailScreenState extends State<DetailScreen>
     final String fenologia = data['fenologia'] ?? '';
     final String usosValor = data['usosEValorEconomico'] ?? '';
     final String taxonomia = data['taxonomiaNomesPopulares'] ?? '';
-
-    // Novos campos (se existirem) e padronizados com admin
     final String descobertas = data['descobertasCientificas'] ?? data['descricaoSimples'] ?? '';
     final beneficios = _parseListField(data['beneficios']);
     final String comoUsar = data['comoUsar'] ?? '';
     final cuidados = _parseListField(data['cuidados']);
-    final nivelEvidencia = data['nivelEvidencia'] ?? 0;
-    final numeroEstudos = data['numeroEstudos'] ?? 0;
-    final String nome = data['nome'] ?? 'Limãozinho';
+    final String nome = data['nome'] ?? '';
     final String audioUrl = data['audioUrl'] ?? '';
 
     return SingleChildScrollView(
@@ -873,14 +828,11 @@ class _DetailScreenState extends State<DetailScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Audio Player Funcional (Fase 8)
           _buildAudioPlayer(nome, audioUrl: audioUrl),
 
-          // "O que a ciência descobriu?" (Fase 3)
           if (descobertas.isNotEmpty)
             _buildScienceCard(descobertas),
 
-          // Descrição principal
           if (descricao.isNotEmpty)
             _buildPremiumCard(
               icon: Icons.article_rounded,
@@ -889,10 +841,6 @@ class _DetailScreenState extends State<DetailScreen>
               content: descricao,
             ),
 
-          // Seção "Onde Encontrar?" (Fase 4)
-          _buildLocationSection(distribuicao),
-
-          // Taxonomia / Nomes Populares
           if (taxonomia.isNotEmpty)
             _buildPremiumCard(
               icon: Icons.category_rounded,
@@ -901,7 +849,6 @@ class _DetailScreenState extends State<DetailScreen>
               content: taxonomia,
             ),
 
-          // Fenologia
           if (fenologia.isNotEmpty)
             _buildPremiumCard(
               icon: Icons.calendar_month_rounded,
@@ -910,7 +857,6 @@ class _DetailScreenState extends State<DetailScreen>
               content: fenologia,
             ),
 
-          // Usos e Valor Econômico
           if (usosValor.isNotEmpty)
             _buildPremiumCard(
               icon: Icons.storefront_rounded,
@@ -919,7 +865,8 @@ class _DetailScreenState extends State<DetailScreen>
               content: usosValor,
             ),
 
-          // Benefícios
+          _buildLocationSection(distribuicao),
+
           if (beneficios.isNotEmpty)
             _buildPremiumCard(
               icon: Icons.medical_services_outlined,
@@ -927,88 +874,32 @@ class _DetailScreenState extends State<DetailScreen>
               accentColor: Colors.green,
               customContent: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: beneficios
-                    .map(
-                      (b) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.check_circle_rounded,
-                              color: Colors.green,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                b,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.75)
-                                      : const Color(
-                                          0xFF1A1A2E,
-                                        ).withValues(alpha: 0.75),
-                                ),
-                              ),
-                            ),
-                          ],
+                children: beneficios.map((b) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.check_circle_rounded, color: Colors.green, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          b,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.75)
+                                : const Color(0xFF1A1A2E).withValues(alpha: 0.75),
+                          ),
                         ),
                       ),
-                    )
-                    .toList(),
+                    ],
+                  ),
+                )).toList(),
               ),
             ),
 
-          // Seção de Segurança (Fase 3)
           if (comoUsar.isNotEmpty || cuidados.isNotEmpty)
             _buildSafetySection(comoUsar, cuidados),
-
-          // Nível de Evidência
-          if (nivelEvidencia > 0)
-            _buildPremiumCard(
-              icon: Icons.bar_chart_rounded,
-              title: 'NÍVEL DE EVIDÊNCIA CIENTÍFICA',
-              accentColor: Colors.amber,
-              customContent: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: List.generate(5, (index) {
-                      return Icon(
-                        index < nivelEvidencia
-                            ? Icons.star_rounded
-                            : Icons.star_border_rounded,
-                        color: Colors.amber,
-                        size: 28,
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _getEvidenceLevelText(nivelEvidencia),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.amber.shade700,
-                    ),
-                  ),
-                  if (numeroEstudos > 0) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Baseado em $numeroEstudos estudos científicos',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.5)
-                            : Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
         ],
       ),
     );
