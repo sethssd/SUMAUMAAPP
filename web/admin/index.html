@@ -2,916 +2,142 @@
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SUMAÚMA — Painel Super Admin</title>
-    <link rel="icon" type="image/png" href="/icons/ico-branco.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <script src="/config.js"></script>
-    <style>
-        :root {
-            --bg: #0A1A0F;
-            --card: #111E14;
-            --surface: #162B1B;
-            --border: #1E3524;
-            --green-mid: #2D6A4F;
-            --green: #40916C;
-            --sage: #74C69D;
-            --light: #D8F3DC;
-            --text: #FFFFFF;
-            --text-dim: rgba(255, 255, 255, 0.55);
-            --red: #E74040;
-            --amber: #F59E0B;
-            --radius: 12px;
-        }
-
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-        }
-
-        /* ── LOADING ───────────────────────────────────────────── */
-        #loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .spinner-lg {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--border);
-            border-top-color: var(--green);
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* ── LOGIN ─────────────────────────────────────────────── */
-        #login-screen {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 24px;
-        }
-
-        .login-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 48px 40px;
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
-        }
-
-        .login-card img {
-            width: 64px;
-            height: 64px;
-            margin-bottom: 12px;
-        }
-
-        .login-card h1 {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--text);
-            margin-bottom: 4px;
-        }
-
-        .login-card p {
-            font-size: 13px;
-            color: var(--text-dim);
-            margin-bottom: 28px;
-        }
-
-        .login-error {
-            background: rgba(231, 64, 64, 0.12);
-            border: 1px solid rgba(231, 64, 64, 0.3);
-            color: var(--red);
-            border-radius: 8px;
-            padding: 10px 14px;
-            font-size: 13px;
-            margin-bottom: 14px;
-            display: none;
-        }
-
-        .field {
-            margin-bottom: 14px;
-            text-align: left;
-        }
-
-        .field label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-dim);
-            display: block;
-            margin-bottom: 6px;
-        }
-
-        .field input,
-        .field select {
-            width: 100%;
-            padding: 12px 14px;
-            border-radius: 9px;
-            border: 1px solid var(--border);
-            background: var(--surface);
-            color: var(--text);
-            font-family: inherit;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .field input:focus,
-        .field select:focus {
-            border-color: var(--green);
-        }
-
-        .field select option {
-            background: var(--surface);
-        }
-
-        /* ── HEADER ────────────────────────────────────────────── */
-        #app-screen {
-            display: none;
-        }
-
-        header {
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-left img {
-            width: 32px;
-            height: 32px;
-        }
-
-        .header-left span {
-            font-size: 17px;
-            font-weight: 700;
-        }
-
-        .badge {
-            background: rgba(64, 145, 108, 0.2);
-            color: var(--sage);
-            font-size: 11px;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-weight: 600;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .user-email {
-            font-size: 13px;
-            color: var(--text-dim);
-        }
-
-        /* ── MAIN ──────────────────────────────────────────────── */
-        main {
-            max-width: 960px;
-            margin: 32px auto;
-            padding: 0 20px 80px;
-        }
-
-        /* ── TABS ──────────────────────────────────────────────── */
-        .tabs-nav {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 0;
-        }
-
-        .tab-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-dim);
-            padding: 12px 24px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            position: relative;
-            transition: color 0.2s;
-        }
-
-        .tab-btn:hover {
-            color: var(--text);
-        }
-
-        .tab-btn.active {
-            color: var(--sage);
-        }
-
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--green);
-            border-radius: 3px 3px 0 0;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* ── TOOLBAR ───────────────────────────────────────────── */
-        .toolbar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .search-wrap {
-            flex: 1;
-            min-width: 200px;
-            position: relative;
-        }
-
-        .search-wrap input {
-            width: 100%;
-            padding: 10px 14px 10px 38px;
-            border-radius: 9px;
-            border: 1px solid var(--border);
-            background: var(--card);
-            color: var(--text);
-            font-family: inherit;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .search-wrap input:focus {
-            border-color: var(--green);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 15px;
-        }
-
-        /* ── TABLE ─────────────────────────────────────────────── */
-        .table-wrap {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        thead th {
-            text-align: left;
-            padding: 14px 18px;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid var(--border);
-            background: var(--surface);
-        }
-
-        tbody tr {
-            transition: background 0.15s;
-        }
-
-        tbody tr:hover {
-            background: var(--surface);
-        }
-
-        tbody td {
-            padding: 14px 18px;
-            font-size: 14px;
-            border-bottom: 1px solid var(--border);
-            vertical-align: middle;
-        }
-
-        tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .email-cell {
-            font-weight: 500;
-        }
-
-        .name-cell {
-            color: var(--text-dim);
-            font-size: 13px;
-        }
-
-        /* ── ROLE BADGE ────────────────────────────────────────── */
-        .role-badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .role-super_admin {
-            background: rgba(245, 158, 11, 0.15);
-            color: var(--amber);
-        }
-
-        .role-admin {
-            background: rgba(64, 145, 108, 0.15);
-            color: var(--sage);
-        }
-
-        .role-escritor {
-            background: rgba(45, 106, 79, 0.3);
-            color: var(--light);
-        }
-
-        .role-usuario {
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--text-dim);
-        }
-
-        /* ── BUTTONS ───────────────────────────────────────────── */
-        .btn {
-            padding: 10px 18px;
-            border-radius: 9px;
-            font-family: inherit;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: opacity 0.2s, transform 0.15s;
-        }
-
-        .btn:active {
-            transform: scale(0.97);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .btn-green {
-            background: var(--green);
-            color: #fff;
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 12px;
-            border-radius: 7px;
-        }
-
-        .btn-primary-login {
-            width: 100%;
-            padding: 13px;
-            margin-top: 4px;
-            background: var(--green);
-            color: #fff;
-            border: none;
-            border-radius: 9px;
-            font-family: inherit;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .btn-primary-login:hover {
-            opacity: 0.88;
-        }
-
-        /* ── MODAL ─────────────────────────────────────────────── */
-        .modal-backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.65);
-            z-index: 200;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
-
-        .modal-backdrop.open {
-            display: flex;
-        }
-
-        .modal {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 32px;
-            width: 100%;
-            max-width: 440px;
-        }
-
-        .modal h2 {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 24px;
-        }
-
-        /* ── TOAST ─────────────────────────────────────────────── */
-        #toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            padding: 13px 20px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 500;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text);
-            transform: translateY(20px);
-            opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
-            z-index: 999;
-            pointer-events: none;
-        }
-
-        #toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        #toast.success {
-            border-color: var(--green);
-            color: var(--sage);
-        }
-
-        #toast.error {
-            border-color: var(--red);
-            color: var(--red);
-        }
-
-        #empty-state-users,
-        #empty-state-requests {
-            text-align: center;
-            padding: 48px 0;
-            color: var(--text-dim);
-            font-size: 15px;
-        }
-
-        .req-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 20px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .req-info h3 {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .req-info p {
-            font-size: 13px;
-            color: var(--text-dim);
-        }
-
-        .req-date {
-            font-size: 11px;
-            color: var(--text-dim);
-            margin-top: 6px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SUMAÚMA — Painel Super Admin</title>
+  <link rel="icon" type="image/png" href="/icons/ico-branco.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared.css" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="/config.js"></script>
 </head>
 
 <body>
 
-    <!-- LOADING -->
-    <div id="loading">
-        <div class="spinner-lg"></div>
-        <p style="color:var(--text-dim);font-size:14px;">A verificar autenticação…</p>
-    </div>
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="spinner-lg"></div>
+    <p style="color:var(--text-dim);font-size:14px;">A verificar autenticação…</p>
+  </div>
 
-    <!-- LOGIN -->
-    <div id="login-screen">
-        <div class="login-card">
-            <img src="/icons/ico-branco.png" alt="SUMAÚMA" />
-            <h1>SUMAÚMA</h1>
-            <p>Painel Super Admin — acesso restrito</p>
-            <div class="login-error" id="login-error"></div>
-            <div class="field"><label>E-mail</label><input type="email" id="in-email" placeholder="admin@sumauma.com" />
-            </div>
-            <div class="field"><label>Senha</label><input type="password" id="in-pass" placeholder="••••••••" /></div>
-            <button class="btn-primary-login" id="btn-login" onclick="doLogin()">Entrar</button>
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-card">
+      <img src="/icons/ico-branco.png" alt="SUMAÚMA" />
+      <h1>SUMAÚMA</h1>
+      <p>Painel Super Admin — acesso restrito</p>
+      <div class="login-error" id="login-error"></div>
+      <div class="field"><label>E-mail</label><input type="email" id="in-email" placeholder="admin@sumauma.com" /></div>
+      <div class="field"><label>Senha</label><input type="password" id="in-pass" placeholder="••••••••" /></div>
+      <button class="btn-primary-login" id="btn-login" onclick="doLogin()">Entrar</button>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app-screen">
+    <header>
+      <div class="header-left">
+        <img src="/icons/ico-branco.png" alt="" />
+        <span>SUMAÚMA</span>
+        <span class="badge">Super Admin</span>
+      </div>
+      <div class="header-right">
+        <span class="user-email" id="header-email"></span>
+        <button class="btn btn-outline btn-sm" onclick="doLogout()">Sair</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('tab-requests')">Solicitações</button>
+        <button class="tab-btn" onclick="switchTab('tab-users')">Usuários</button>
+        <button class="tab-btn" onclick="switchTab('tab-plants')">Plantas</button>
+      </div>
+
+      <!-- TAB: REQUESTS -->
+      <div id="tab-requests" class="tab-content active">
+        <h2 style="margin-bottom:16px;">Pedidos de Acesso</h2>
+        <div id="requests-list"></div>
+        <div id="empty-state-requests" style="display:none">Nenhum pedido pendente.</div>
+      </div>
+
+      <!-- TAB: USERS -->
+      <div id="tab-users" class="tab-content">
+        <div class="toolbar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Pesquisar usuários…" oninput="renderUsersTable()" />
+          </div>
+          <button class="btn btn-green" onclick="openCreateModal()">＋ Criar Usuário</button>
         </div>
-    </div>
-
-    <!-- APP -->
-    <div id="app-screen">
-        <header>
-            <div class="header-left">
-                <img src="/icons/ico-branco.png" alt="" />
-                <span>SUMAÚMA</span>
-                <span class="badge">Super Admin</span>
-            </div>
-            <div class="header-right">
-                <span class="user-email" id="header-email"></span>
-                <button class="btn btn-outline btn-sm" onclick="doLogout()">Sair</button>
-            </div>
-        </header>
-
-        <main>
-            <div class="tabs-nav">
-                <button class="tab-btn active" onclick="switchTab('tab-requests')">Solicitações</button>
-                <button class="tab-btn" onclick="switchTab('tab-users')">Usuários</button>
-                <button class="tab-btn" onclick="switchTab('tab-plants')">Plantas</button>
-            </div>
-
-            <!-- TAB: REQUESTS -->
-            <div id="tab-requests" class="tab-content active">
-                <h2 style="margin-bottom:16px;">Pedidos de Acesso</h2>
-                <div id="requests-list"></div>
-                <div id="empty-state-requests" style="display:none">Nenhum pedido pendente.</div>
-            </div>
-
-            <!-- TAB: USERS -->
-            <div id="tab-users" class="tab-content">
-                <div class="toolbar">
-                    <div class="search-wrap">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="search-input" placeholder="Pesquisar usuários…"
-                            oninput="renderUsersTable()" />
-                    </div>
-                    <button class="btn btn-green" onclick="openCreateModal()">＋ Criar Usuário</button>
-                </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Email</th>
-                                <th>Nome</th>
-                                <th>Cargo</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-tbody"></tbody>
-                    </table>
-                    <div id="empty-state-users" style="display:none">Nenhum utilizador encontrado.</div>
-                </div>
-            </div>
-
-            <!-- TAB: PLANTS -->
-            <div id="tab-plants" class="tab-content">
-                <div class="toolbar">
-                    <div class="search-wrap">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="search-plants" placeholder="Pesquisar plantas…"
-                            oninput="renderPlantsTable()" />
-                    </div>
-                    <button class="btn btn-green" onclick="openPlantForm()">＋ Nova Planta</button>
-                </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="plants-tbody"></tbody>
-                    </table>
-                    <div id="empty-state-plants" style="display:none">Nenhuma planta encontrada.</div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- MODAL: Atribuir Cargo -->
-    <div class="modal-backdrop" id="modal-role">
-        <div class="modal">
-            <h2 id="modal-title">🎖️ Atribuir Cargo</h2>
-            <p style="font-size:13px;color:var(--text-dim);margin-bottom:18px;" id="modal-role-email"></p>
-            <div class="field">
-                <label>Cargo</label>
-                <select id="role-select">
-                    <option value="usuario">Usuário (leitor)</option>
-                    <option value="escritor">Escritor (editar plantas)</option>
-                    <option value="admin">Admin (gerenciar apps)</option>
-                    <option value="super_admin">Super Admin (total)</option>
-                </select>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-outline" onclick="closeRoleModal()">Cancelar</button>
-                <button class="btn btn-green" id="btn-save-role" onclick="saveRole()">Salvar</button>
-            </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Email</th><th>Nome</th><th>Cargo</th><th>Ações</th></tr></thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+          <div id="empty-state-users" style="display:none">Nenhum utilizador encontrado.</div>
         </div>
-    </div>
+      </div>
 
-    <!-- MODAL: Criar Conta -->
-    <div class="modal-backdrop" id="modal-create">
-        <div class="modal">
-            <h2>✨ Criar Conta</h2>
-            <div class="field"><label>Nome</label><input type="text" id="new-name" placeholder="Nome completo" /></div>
-            <div class="field"><label>E-mail</label><input type="email" id="new-email" /></div>
-            <div class="field"><label>Senha</label><input type="password" id="new-pass" placeholder="Mínimo 6 chars" />
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-outline" onclick="closeCreateModal()">Cancelar</button>
-                <button class="btn btn-green" id="btn-create" onclick="doCreateUser()">Criar</button>
-            </div>
+      <!-- TAB: PLANTS -->
+      <div id="tab-plants" class="tab-content">
+        <div class="toolbar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-plants" placeholder="Pesquisar plantas…" oninput="renderPlantsTable()" />
+          </div>
+          <button class="btn btn-green" onclick="openPlantForm()">＋ Nova Planta</button>
         </div>
-    </div>
-
-    <div id="toast"></div>
-
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-        import { getFirestore, collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDoc, serverTimestamp, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-
-        const firebaseConfig = window.CONFIG.FIREBASE;
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        let allUsers = [];
-        let allRequests = [];
-        let allPlants = [];
-        let editingUid = null;
-        let editingEmail = null;
-        let currentRequestId = null;
-
-        onAuthStateChanged(auth, async (user) => {
-            document.getElementById('loading').style.display = 'none';
-            if (!user) { showLogin(); return; }
-            const snap = await getDoc(doc(db, 'users', user.uid));
-            if (!snap.exists() || snap.data().role !== 'super_admin') {
-                signOut(auth); showLogin('Acesso exclusivo Super Admin.'); return;
-            }
-            document.getElementById('header-email').textContent = user.email;
-            showApp(); subscribeData();
-        });
-
-        function showLogin(err = '') {
-            document.getElementById('login-screen').style.display = 'flex';
-            document.getElementById('app-screen').style.display = 'none';
-            if (err) { const el = document.getElementById('login-error'); el.innerText = err; el.style.display = 'block'; }
-        }
-        function showApp() {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('app-screen').style.display = 'block';
-        }
-
-        function subscribeData() {
-            // Users
-            onSnapshot(collection(db, 'users'), (snap) => {
-                allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() })).sort((a, b) => (a.email || '').localeCompare(b.email || ''));
-                renderUsersTable();
-            });
-            // Requests
-            onSnapshot(query(collection(db, 'role_requests'), orderBy('dataPedido', 'desc')), (snap) => {
-                allRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderRequests();
-            });
-            // Plants
-            onSnapshot(collection(db, 'plantas'), (snap) => {
-                allPlants = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
-                renderPlantsTable();
-            });
-        }
-
-        window.switchTab = (id) => {
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('onclick').includes(id)));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === id));
-        };
-
-        window.renderUsersTable = () => {
-            const q = document.getElementById('search-input').value.toLowerCase();
-            const filtered = allUsers.filter(u => (u.email || '').toLowerCase().includes(q) || (u.nome || '').toLowerCase().includes(q));
-            const tbody = document.getElementById('users-tbody');
-            tbody.innerHTML = '';
-            document.getElementById('empty-state-users').style.display = filtered.length ? 'none' : 'block';
-            filtered.forEach(u => {
-                const role = u.role || 'usuario';
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-        <td class="email-cell">${u.email || '—'}</td>
-        <td class="name-cell">${u.nome || '—'}</td>
-        <td><span class="role-badge role-${role}">${rolePt(role)}</span></td>
-        <td><button class="btn btn-outline btn-sm" onclick="openRoleModal('${u.uid}','${u.email}','${role}')">✏️ Editar</button></td>
-      `;
-                tbody.appendChild(tr);
-            });
-        };
-
-        window.renderPlantsTable = () => {
-            const q = document.getElementById('search-plants').value.toLowerCase();
-            const filtered = allPlants.filter(p => (p.nome || '').toLowerCase().includes(q) || (p.nomeCientifico || '').toLowerCase().includes(q));
-            const tbody = document.getElementById('plants-tbody');
-            tbody.innerHTML = '';
-            document.getElementById('empty-state-plants').style.display = filtered.length ? 'none' : 'block';
-            filtered.forEach(p => {
-                const isDel = p.excluida === true;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-        <td class="email-cell">
-          <div>${p.nome || '—'}</div>
-          <div style="font-size:11px;color:var(--text-dim)">${p.nomeCientifico || ''}</div>
-        </td>
-        <td><span class="role-badge ${isDel ? 'role-usuario' : 'role-admin'}">${isDel ? '🗑️ Excluída' : '🌿 Ativa'}</span></td>
-        <td style="display:flex;gap:6px;align-items:center;">
-          <button class="btn btn-green btn-sm" onclick="openPlantForm('${p.id}')">✏️ Editar</button>
-          <button class="btn ${isDel ? 'btn-outline' : 'btn-outline'} btn-sm" onclick="togglePlantStatus('${p.id}', ${!isDel})">
-            ${isDel ? '♻️ Restaurar' : '🗑️ Ocultar'}
-          </button>
-        </td>
-      `;
-                tbody.appendChild(tr);
-            });
-        };
-
-        window.togglePlantStatus = async (id, status) => {
-            try {
-                await updateDoc(doc(db, 'plantas', id), { excluida: status });
-                toast(status ? 'Planta ocultada' : 'Planta restaurada', 'success');
-            } catch (e) { toast('Erro: ' + e.message, 'error'); }
-        };
-
-        window.openPlantForm = (plantaId) => {
-            const base = '/formulario';
-            const url = plantaId ? `${base}?id=${plantaId}` : base;
-            window.open(url, '_blank');
-        };
-
-        window.renderRequests = () => {
-            const container = document.getElementById('requests-list');
-            container.innerHTML = '';
-            document.getElementById('empty-state-requests').style.display = allRequests.length ? 'none' : 'block';
-            allRequests.forEach(r => {
-                const div = document.createElement('div');
-                div.className = 'req-card';
-                div.innerHTML = `
-        <div class="req-info">
-          <h3>${r.email}</h3>
-          <p>Nome: ${r.nome || '—'} | UID: ${r.uid}</p>
-          <div class="req-date">Solicitado em: ${r.dataPedido?.toDate().toLocaleString() || '—'}</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>Status</th><th>Ações</th></tr></thead>
+            <tbody id="plants-tbody"></tbody>
+          </table>
+          <div id="empty-state-plants" style="display:none">Nenhuma planta encontrada.</div>
         </div>
-        <button class="btn btn-green btn-sm" onclick="openRoleModal('${r.uid}','${r.email}','usuario','${r.id}')">Dar Cargo</button>
-      `;
-                container.appendChild(div);
-            });
-        };
+      </div>
+    </main>
+  </div>
 
-        function rolePt(r) { return { usuario: 'Usuário', escritor: 'Escritor', admin: 'Admin', super_admin: 'Super Admin' }[r] || r; }
+  <!-- MODAL: Atribuir Cargo -->
+  <div class="modal-backdrop" id="modal-role">
+    <div class="modal">
+      <h2 id="modal-title">🎖️ Atribuir Cargo</h2>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:18px;" id="modal-role-email"></p>
+      <div class="field">
+        <label>Cargo</label>
+        <select id="role-select">
+          <option value="usuario">Usuário (leitor)</option>
+          <option value="escritor">Escritor (editar plantas)</option>
+          <option value="admin">Admin (gerenciar apps)</option>
+          <option value="super_admin">Super Admin (total)</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeRoleModal()">Cancelar</button>
+        <button class="btn btn-green" id="btn-save-role" onclick="saveRole()">Salvar</button>
+      </div>
+    </div>
+  </div>
 
-        window.openRoleModal = (uid, email, currentRole, requestId = null) => {
-            editingUid = uid; currentRequestId = requestId; editingEmail = email;
-            document.getElementById('modal-role-email').innerText = email;
-            document.getElementById('role-select').value = currentRole;
-            document.getElementById('modal-title').innerText = requestId ? '✅ Atribuir Cargo Solicitado' : '🎖️ Alterar Cargo';
-            document.getElementById('modal-role').classList.add('open');
-        };
-        window.closeRoleModal = () => { document.getElementById('modal-role').classList.remove('open'); editingUid = null; currentRequestId = null; };
+  <!-- MODAL: Criar Conta -->
+  <div class="modal-backdrop" id="modal-create">
+    <div class="modal">
+      <h2>✨ Criar Conta</h2>
+      <div class="field"><label>Nome</label><input type="text" id="new-name" placeholder="Nome completo" /></div>
+      <div class="field"><label>E-mail</label><input type="email" id="new-email" /></div>
+      <div class="field"><label>Senha</label><input type="password" id="new-pass" placeholder="Mínimo 6 chars" /></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeCreateModal()">Cancelar</button>
+        <button class="btn btn-green" id="btn-create" onclick="doCreateUser()">Criar</button>
+      </div>
+    </div>
+  </div>
 
-        window.saveRole = async () => {
-            const role = document.getElementById('role-select').value;
-            const btn = document.getElementById('btn-save-role');
-            btn.disabled = true;
-            try {
-                // 1. Atualiza ou Cria o documento do usuário
-                const userRef = doc(db, 'users', editingUid);
-                const data = {
-                    role,
-                    uid: editingUid,
-                    email: editingEmail,
-                    // Se ainda não tiver nome, usa parte do email
-                    nome: allUsers.find(u => u.uid === editingUid)?.nome || editingEmail.split('@')[0]
-                };
+  <div id="toast"></div>
 
-                await setDoc(userRef, data, { merge: true });
+  <script type="module" src="app.js"></script>
 
-                // 2. Se for uma solicitação, deleta o pedido
-                if (currentRequestId) await deleteDoc(doc(db, 'role_requests', currentRequestId));
-
-                toast(`Cargo atualizado para ${rolePt(role)}`, 'success');
-                closeRoleModal();
-            } catch (e) { toast('Erro: ' + e.message, 'error'); }
-            finally { btn.disabled = false; }
-        };
-
-        window.openCreateModal = () => document.getElementById('modal-create').classList.add('open');
-        window.closeCreateModal = () => document.getElementById('modal-create').classList.remove('open');
-
-        window.doCreateUser = async () => {
-            const n = document.getElementById('new-name').value, e = document.getElementById('new-email').value, p = document.getElementById('new-pass').value;
-            if (!e || !p) { toast('Campos obrigatórios!', 'error'); return; }
-            const btn = document.getElementById('btn-create'); btn.disabled = true;
-            try {
-                const cred = await createUserWithEmailAndPassword(auth, e, p);
-                if (n) await updateProfile(cred.user, { displayName: n });
-                await setDoc(doc(db, 'users', cred.user.uid), { uid: cred.user.uid, email: e, nome: n || e.split('@')[0], role: 'usuario', criadoEm: serverTimestamp() });
-                toast('Conta criada com sucesso!', 'success'); closeCreateModal();
-            } catch (err) { toast('Erro: ' + err.code, 'error'); }
-            finally { btn.disabled = false; }
-        };
-
-        window.doLogin = async () => {
-            const e = document.getElementById('in-email').value, p = document.getElementById('in-pass').value;
-            const btn = document.getElementById('btn-login'); btn.disabled = true;
-            try { await signInWithEmailAndPassword(auth, e, p); }
-            catch (err) { const el = document.getElementById('login-error'); el.innerText = 'Falha no login: ' + err.code; el.style.display = 'block'; }
-            finally { btn.disabled = false; }
-        };
-        window.doLogout = () => signOut(auth);
-
-        function toast(m, t = '') {
-            const el = document.getElementById('toast'); el.innerText = m; el.className = `show ${t}`;
-            setTimeout(() => el.className = '', 3000);
-        }
-    </script>
 </body>
-
 </html>
