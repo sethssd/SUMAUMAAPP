@@ -5,7 +5,7 @@ import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:just_audio_background/just_audio_background.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../utils/app_theme.dart';
 
 class DetailScreen extends StatefulWidget {
@@ -609,7 +609,11 @@ class _DetailScreenState extends State<DetailScreen>
         children: [
           Row(
             children: [
-              const Text('🔎', style: TextStyle(fontSize: 20)),
+              SvgPicture.asset(
+                'assets/icons/navegacao/microscopio.svg', 
+                width: 22, 
+                colorFilter: ColorFilter.mode(isDark ? Colors.amber.shade400 : Colors.amber.shade700, BlendMode.srcIn)
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -647,7 +651,7 @@ class _DetailScreenState extends State<DetailScreen>
       children: [
         Row(
           children: [
-            const Icon(Icons.spa_outlined, color: Colors.white70, size: 22),
+            SvgPicture.asset('assets/icons/medicinais/imunidade.svg', width: 22, colorFilter: const ColorFilter.mode(Colors.white70, BlendMode.srcIn)),
             const SizedBox(width: 8),
             Text(
               'Como usar com segurança?',
@@ -677,6 +681,9 @@ class _DetailScreenState extends State<DetailScreen>
                   decoration: BoxDecoration(
                     color: SumaColors.greenBright,
                     borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: SvgPicture.asset('assets/icons/ficha/folha.svg', width: 24, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -724,6 +731,9 @@ class _DetailScreenState extends State<DetailScreen>
                   decoration: BoxDecoration(
                     color: const Color(0xFFD32F2F),
                     borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: SvgPicture.asset('assets/icons/alertas/toxidade_alta.svg', width: 24, colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn)),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -1489,14 +1499,7 @@ class _SumaAudioPlayerState extends State<SumaAudioPlayer> {
     });
 
     try {
-      _audioPlayer.setAudioSource(LockCachingAudioSource(
-        Uri.parse(widget.audioUrl),
-        tag: MediaItem(
-          id: widget.audioUrl,
-          album: "Sumaúma",
-          title: "Papo de Feira: ${widget.title}",
-        ),
-      ));
+      _audioPlayer.setAudioSource(LockCachingAudioSource(Uri.parse(widget.audioUrl)));
     } catch (e) {
       debugPrint("Erro ao precarregar áudio via Cache: \$e");
     }

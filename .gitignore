@@ -58,3 +58,4 @@ bfg-1.15.0.jar
 bfg.jar
 *.json
 /icons
+/assets/icons
