@@ -1,4 +1,4 @@
-# 🌿 BADERNA
+# SUMAÙMA
 
 > **B**ase de **A**poio para **D**ados **E**tnobotânicos de **R**ecursos **N**aturais da **A**mazônia
 
