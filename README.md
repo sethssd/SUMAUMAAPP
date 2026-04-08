@@ -1,22 +1,19 @@
 # SUMAÙMA
 
-> **B**ase de **A**poio para **D**ados **E**tnobotânicos de **R**ecursos **N**aturais da **A**mazônia
 
 Aplicativo mobile desenvolvido em **Flutter** com backend em **Firebase**, focado em catalogar e disponibilizar informações sobre plantas medicinais e espécies da flora amazônica — com suporte a visualização 3D, dados científicos e referências bibliográficas.
 
 ---
 
-## ✨ Funcionalidades
+##  Funcionalidades
 
-- 📋 **Catálogo de Plantas** — listagem completa com imagens, nome popular e descrição curta
-- 🔍 **Busca Inteligente** — pesquisa por nome em tempo real
-- 🌿 **Aba Geral** — descrição simples, benefícios, modo de uso, cuidados e nível de evidência científica
-- 🔬 **Aba Científica** — composição química, propriedades farmacológicas e estudos clínicos
-- 📚 **Aba Referências** — referências gerais e científicas com links e DOI/PMID
-- 🧊 **Visualização 3D** — modelos GLB/GLTF interativos com rotação automática
-- 🔐 **Autenticação** — login com Google
-- 🛠️ **Painel Admin** — gerenciamento de plantas (adicionar, editar, excluir)
-- 💡 **Sugestões** — tela para envio de sugestões de novas plantas
+-  **Catálogo de Plantas** — listagem completa com imagens, nome popular e descrição curta
+-  **Busca Inteligente** — pesquisa por nome em tempo real
+-  **Aba Geral** — descrição simples, benefícios, modo de uso, cuidados e nível de evidência científica
+-  **Aba Científica** — composição química, propriedades farmacológicas e estudos clínicos
+-  **Aba Referências** — referências gerais e científicas com links e DOI/PMID
+-  **Visualização 3D** — modelos GLB/GLTF interativos com rotação automática
+
 
 ---
 
@@ -33,7 +30,7 @@ Aplicativo mobile desenvolvido em **Flutter** com backend em **Firebase**, focad
 
 ---
 
-## 📁 Estrutura do Projeto
+##  Estrutura do Projeto
 
 ```
 lib/
@@ -54,75 +51,6 @@ lib/
     └── plant_search_delegate.dart # Delegado de busca
 ```
 
----
-
-## 🚀 Como Rodar
-
-### Pré-requisitos
-
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) instalado
-- Conta no Firebase com projeto configurado
-- Arquivo `google-services.json` (Android) e `GoogleService-Info.plist` (iOS) adicionados
-
-### Instalação
-
-```bash
-# Clone o repositório
-git clone https://github.com/sethssd/BADERNA.git
-cd BADERNA
-
-# Instale as dependências
-flutter pub get
-```
-
-### Executar
-
-```bash
-# Modo debug
-flutter run
-
-# Modo release no emulador
-flutter run --release
-
-# Gerar APK
-flutter build apk
-
-# Gerar APK por splits de ABI (menor tamanho)
-flutter build apk --split-per-abi
-```
-
----
-
-## 🔥 Configuração do Firebase
-
-1. Crie um projeto no [Firebase Console](https://console.firebase.google.com/)
-2. Ative o **Cloud Firestore**, **Firebase Authentication** e o provedor **Google**
-3. Baixe o `google-services.json` e coloque em `android/app/`
-4. Configure as regras do Firestore conforme necessidade do projeto
-5. Renomeie `firebase_options.dart.example` para `firebase_options.dart` e preencha com suas credenciais
-
----
-
-## 🗂️ Estrutura do Firestore
-
-Coleção `plantas` — cada documento representa uma planta com os seguintes campos principais:
-
-| Campo | Tipo | Descrição |
-|---|---|---|
-| `nome` | String | Nome popular da planta |
-| `descricaoCurta` | String | Resumo exibido na lista |
-| `descricaoSimples` | String | Descrição para o público geral |
-| `imagemUrl` | String | URL da imagem principal (Cloudinary) |
-| `modelo3dUrl` | String | URL do modelo 3D (.glb/.gltf) |
-| `beneficios` | Array | Lista de benefícios |
-| `comoUsar` | String | Modo de preparo/uso |
-| `cuidados` | Array | Avisos e contraindicações |
-| `nivelEvidencia` | Number | Nível 1–5 de evidência científica |
-| `composicaoQuimica` | Map | Compostos químicos identificados |
-| `propriedadesFarmacologicas` | Array | Propriedades farmacológicas detalhadas |
-| `referenciasCientificas` | Array | Referências estruturadas (título, autores, ano, DOI/PMID) |
-
----
 
 ## 📱 Plataformas Suportadas
 
@@ -135,7 +63,7 @@ Coleção `plantas` — cada documento representa uma planta com os seguintes ca
 
 ---
 
-## 🤝 Contribuição
+##  Contribuição
 
 Contribuições são bem-vindas! Para sugerir uma nova planta ou funcionalidade:
 
@@ -148,7 +76,7 @@ Contribuições são bem-vindas! Para sugerir uma nova planta ou funcionalidade:
 
 ---
 
-## 📄 Licença
+##  Licença
 
 Este projeto está sob licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
