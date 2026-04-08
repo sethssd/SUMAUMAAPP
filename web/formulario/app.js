@@ -36,6 +36,7 @@ const QUILL_TOOLBAR = [
 const QUILL_FIELDS = [
   'taxonomia', 'descricao', 'distribuicaoHabitat',
   'fenologia', 'usosEValorEconomico', 'farmacologia',
+  'descobertasCientificas', 'comoUsar', 'cuidados'
 ];
 
 const quillEditors = {};
@@ -74,6 +75,9 @@ function getPlaceholder(field) {
     fenologia: 'Épocas de floração, frutificação...',
     usosEValorEconomico: 'Uso alimentar, madeireiro, medicinal...',
     farmacologia: 'Compostos bioativos, pesquisas, propriedades medicinais...',
+    descobertasCientificas: 'Resumo curto com citações para o card da Ciência...',
+    comoUsar: 'Descreva os preparos de chás ou banhos...',
+    cuidados: 'Crie bullet points sobre alergias, intoxicações ou riscos com gestantes...'
   };
   return map[field] || 'Digite aqui...';
 }
@@ -150,13 +154,15 @@ async function loadPlanta(id) {
   setQuillHtml('fenologia', d.fenologia);
   setQuillHtml('usosEValorEconomico', d.usosEValorEconomico);
   setQuillHtml('farmacologia', d.farmacologia);
+  setQuillHtml('descobertasCientificas', d.descobertasCientificas);
+  setQuillHtml('comoUsar', d.comoUsar);
+  
+  if (Array.isArray(d.cuidados)) setQuillHtml('cuidados', d.cuidados.join('<br>'));
+  else setQuillHtml('cuidados', d.cuidados);
 
   const toStr = (v) => Array.isArray(v) ? v.join(', ') : (v || '');
   setField('referenciasFarmacologicas', toStr(d.referenciasFarmacologicas));
   setField('referenciaGeral', toStr(d.referenciaGeral));
-  setField('cuidados', toStr(d.cuidados));
-  setField('descobertasCientificas', d.descobertasCientificas);
-  setField('comoUsar', d.comoUsar);
 
   window._imagensExtras = Array.isArray(d.imagensExtras) ? [...d.imagensExtras] : [];
   if (typeof window.renderExtraImgs === 'function') window.renderExtraImgs();
@@ -236,12 +242,12 @@ window.savePlanta = async function () {
     fenologia: getQuillHtml('fenologia'),
     usosEValorEconomico: getQuillHtml('usosEValorEconomico'),
     farmacologia: getQuillHtml('farmacologia'),
+    descobertasCientificas: getQuillHtml('descobertasCientificas'),
+    comoUsar: getQuillHtml('comoUsar'),
+    cuidados: getQuillHtml('cuidados'),
     referenciasFarmacologicas: toList('referenciasFarmacologicas'),
     referenciaGeral: toList('referenciaGeral'),
     imagensExtras: window._imagensExtras || [],
-    cuidados: toList('cuidados'),
-    descobertasCientificas: getVal('descobertasCientificas'),
-    comoUsar: getVal('comoUsar'),
     keywords,
     updatedAt: serverTimestamp(),
   };

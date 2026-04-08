@@ -5,6 +5,7 @@ import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../utils/app_theme.dart';
 
@@ -628,9 +629,9 @@ class _DetailScreenState extends State<DetailScreen>
             ],
           ),
           const SizedBox(height: 12),
-          Text(
+          HtmlWidget(
             content,
-            style: TextStyle(
+            textStyle: TextStyle(
               fontSize: 13,
               height: 1.5,
               color: isDark ? Colors.white.withValues(alpha: 0.8) : Colors.grey.shade800,
@@ -644,7 +645,7 @@ class _DetailScreenState extends State<DetailScreen>
   // ══════════════════════════════════════════════════════════════
   //  SAFETY SECTION
   // ══════════════════════════════════════════════════════════════
-  Widget _buildSafetySection(String comoUsarText, List<String> cuidadosList) {
+  Widget _buildSafetySection(String comoUsarText, String cuidadosText) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -700,9 +701,9 @@ class _DetailScreenState extends State<DetailScreen>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      HtmlWidget(
                         comoUsarText,
-                        style: TextStyle(
+                        textStyle: TextStyle(
                           fontSize: 12,
                           height: 1.4,
                           color: isDark ? Colors.white70 : Colors.grey.shade700,
@@ -714,7 +715,7 @@ class _DetailScreenState extends State<DetailScreen>
               ],
             ),
           ),
-        if (cuidadosList.isNotEmpty)
+        if (cuidadosText.isNotEmpty)
           Container(
             margin: const EdgeInsets.only(bottom: 24),
             padding: const EdgeInsets.all(14),
@@ -750,9 +751,9 @@ class _DetailScreenState extends State<DetailScreen>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        cuidadosList.join('\n'),
-                        style: TextStyle(
+                      HtmlWidget(
+                        cuidadosText,
+                        textStyle: TextStyle(
                           fontSize: 12,
                           height: 1.4,
                           color: isDark ? Colors.white70 : Colors.grey.shade700,
@@ -788,7 +789,7 @@ class _DetailScreenState extends State<DetailScreen>
         children: [
           Row(
             children: [
-              const Icon(Icons.location_on_outlined, color: Colors.white70, size: 22),
+              Icon(Icons.location_on_outlined, color: isDark ? Colors.white : const Color(0xFF1A1A2E), size: 22),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -829,7 +830,9 @@ class _DetailScreenState extends State<DetailScreen>
     final String descobertas = data['descobertasCientificas'] ?? data['descricaoSimples'] ?? '';
     final beneficios = _parseListField(data['beneficios']);
     final String comoUsar = data['comoUsar'] ?? '';
-    final cuidados = _parseListField(data['cuidados']);
+    final String cuidados = data['cuidados'] is List 
+        ? data['cuidados'].join('<br>') 
+        : (data['cuidados']?.toString() ?? '');
     final String nome = data['nome'] ?? '';
     final String audioUrl = data['audioUrl'] ?? '';
 
@@ -1499,7 +1502,14 @@ class _SumaAudioPlayerState extends State<SumaAudioPlayer> {
     });
 
     try {
-      _audioPlayer.setAudioSource(LockCachingAudioSource(Uri.parse(widget.audioUrl)));
+      _audioPlayer.setAudioSource(LockCachingAudioSource(
+        Uri.parse(widget.audioUrl),
+        tag: MediaItem(
+          id: widget.audioUrl,
+          album: "Sumaúma",
+          title: "Papo de Feira: ${widget.title}",
+        ),
+      ));
     } catch (e) {
       debugPrint("Erro ao precarregar áudio via Cache: \$e");
     }
