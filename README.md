@@ -17,7 +17,7 @@ Aplicativo mobile desenvolvido em **Flutter** com backend em **Firebase**, focad
 
 ---
 
-## 🛠️ Tecnologias
+##  Tecnologias
 
 | Camada | Tecnologia |
 |---|---|
@@ -52,14 +52,14 @@ lib/
 ```
 
 
-## 📱 Plataformas Suportadas
+##  Plataformas Suportadas
 
-- ✅ Android
-- ✅ iOS
-- ✅ Web
-- ✅ Windows
-- ✅ Linux
-- ✅ macOS
+-  Android
+-  iOS
+-  Web
+-  Windows
+-  Linux
+-  macOS
 
 ---
 
