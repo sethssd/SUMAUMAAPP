@@ -3,18 +3,9 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'env.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
-///
-/// Example:
-/// ```dart
-/// import 'firebase_options.dart';
-/// // ...
-/// await Firebase.initializeApp(
-///   options: DefaultFirebaseOptions.currentPlatform,
-/// );
-/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -41,54 +32,49 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static FirebaseOptions web = FirebaseOptions(
-    apiKey: dotenv.get('FIREBASE_API_KEY_WEB'),
-    appId: dotenv.get('FIREBASE_APP_ID_WEB'),
-    messagingSenderId: dotenv.get('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: dotenv.get('FIREBASE_PROJECT_ID'),
-    authDomain: dotenv.get('FIREBASE_AUTH_DOMAIN'),
-    storageBucket: dotenv.get('FIREBASE_STORAGE_BUCKET'),
-    measurementId: dotenv.get('FIREBASE_MEASUREMENT_ID_WEB'),
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: Env.firebaseApiKeyWeb,
+    appId: Env.firebaseAppIdWeb,
+    messagingSenderId: Env.firebaseMessagingSenderId,
+    projectId: Env.firebaseProjectId,
+    authDomain: Env.firebaseAuthDomain,
+    storageBucket: Env.firebaseStorageBucket,
+    measurementId: Env.firebaseMeasurementIdWeb,
   );
 
-  static FirebaseOptions android = FirebaseOptions(
-    apiKey: dotenv.get('FIREBASE_API_KEY_ANDROID'),
-    appId: dotenv.get('FIREBASE_APP_ID_ANDROID'),
-    messagingSenderId: dotenv.get('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: dotenv.get('FIREBASE_PROJECT_ID'),
-    storageBucket: dotenv.get('FIREBASE_STORAGE_BUCKET'),
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: Env.firebaseApiKeyAndroid,
+    appId: Env.firebaseAppIdAndroid,
+    messagingSenderId: Env.firebaseMessagingSenderId,
+    projectId: Env.firebaseProjectId,
+    storageBucket: Env.firebaseStorageBucket,
   );
 
-  static FirebaseOptions ios = FirebaseOptions(
-    apiKey: dotenv.get('FIREBASE_API_KEY_IOS'),
-    appId: dotenv.get('FIREBASE_APP_ID_IOS'),
-    messagingSenderId: dotenv.get('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: dotenv.get('FIREBASE_PROJECT_ID'),
-    storageBucket: dotenv.get('FIREBASE_STORAGE_BUCKET'),
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: Env.firebaseApiKeyIos,
+    appId: Env.firebaseAppIdIos,
+    messagingSenderId: Env.firebaseMessagingSenderId,
+    projectId: Env.firebaseProjectId,
+    storageBucket: Env.firebaseStorageBucket,
     iosBundleId: 'com.example.badernaApk',
   );
 
-  static FirebaseOptions macos = FirebaseOptions(
-    apiKey: dotenv.get('FIREBASE_API_KEY_IOS'),
-    appId: dotenv.get('FIREBASE_APP_ID_IOS'),
-    messagingSenderId: dotenv.get('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: dotenv.get('FIREBASE_PROJECT_ID'),
-    storageBucket: dotenv.get('FIREBASE_STORAGE_BUCKET'),
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: Env.firebaseApiKeyIos,
+    appId: Env.firebaseAppIdIos,
+    messagingSenderId: Env.firebaseMessagingSenderId,
+    projectId: Env.firebaseProjectId,
+    storageBucket: Env.firebaseStorageBucket,
     iosBundleId: 'com.example.badernaApk',
   );
 
-  static FirebaseOptions windows = FirebaseOptions(
-    apiKey: dotenv.get('FIREBASE_API_KEY_WEB'),
-    appId: dotenv
-        .get('FIREBASE_APP_ID_WEB')
-        .replaceAll(
-          'web:66f93c2f568c8cd829f0c3',
-          'web:25318807b8ccbbcf29f0c3',
-        ), // Note: Windows app ID was slightly different in the original file
-    messagingSenderId: dotenv.get('FIREBASE_MESSAGING_SENDER_ID'),
-    projectId: dotenv.get('FIREBASE_PROJECT_ID'),
-    authDomain: dotenv.get('FIREBASE_AUTH_DOMAIN'),
-    storageBucket: dotenv.get('FIREBASE_STORAGE_BUCKET'),
-    measurementId: dotenv.get('FIREBASE_MEASUREMENT_ID_WINDOWS'),
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: Env.firebaseApiKeyWeb,
+    appId: '1:192051097466:web:25318807b8ccbbcf29f0c3', // Specific hardcoded app id for windows based on original replaceAll
+    messagingSenderId: Env.firebaseMessagingSenderId,
+    projectId: Env.firebaseProjectId,
+    authDomain: Env.firebaseAuthDomain,
+    storageBucket: Env.firebaseStorageBucket,
+    measurementId: Env.firebaseMeasurementIdWindows,
   );
 }

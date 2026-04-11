@@ -18,15 +18,21 @@ service cloud.firestore {
     match /plantas/{plantaId} {
       allow read: if true;
       
-      // Escritores e Super Admins podem CRIAR e ATUALIZAR
-      allow create, update: if isLoggedIn() && (getRole() == 'escritor' || getRole() == 'super_admin');
+      // Regra de CRIAR: Valida o cargo e garante que o creatorId não seja forjado
+      allow create: if isLoggedIn() && (
+                      getRole() == 'super_admin' || 
+                      (getRole() == 'escritor' && request.resource.data.creatorId == request.auth.uid)
+                    );
+                    
+      // Regra de ATUALIZAR:
+      allow update: if isLoggedIn() && (getRole() == 'escritor' || getRole() == 'super_admin');
       
-      // Regra de DELETAR:
+      // Regra de DELETAR: Revalida o cargo e a autoria
       allow delete: if isLoggedIn() && (
                       // 1. O Super Admin pode deletar...
                       getRole() == 'super_admin' || 
-                      // 2. OU o dono pode deletar
-                      (resource.data.creatorId == request.auth.uid)
+                      // 2. OU o dono (se ainda for escritor) pode deletar
+                      (getRole() == 'escritor' && resource.data.creatorId == request.auth.uid)
                     );
     }
 
@@ -42,7 +48,11 @@ service cloud.firestore {
     
     // --- REGRAS PARA "SUGESTOES" ---
     match /sugestoes/{sugestaoId} {
-      allow create: if true;
+      allow create: if isLoggedIn() &&
+                    request.resource.data.keys().hasAll(['texto', 'timestamp', 'lido']) &&
+                    request.resource.data.texto is string &&
+                    request.resource.data.texto.size() <= 1000 &&
+                    request.resource.data.lido == false;
       allow read, update, delete: if false;
     }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
@@ -15,7 +14,6 @@ void main() async {
     androidNotificationOngoing: true,
     androidNotificationIcon: 'mipmap/launcher_icon',
   );
-  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }

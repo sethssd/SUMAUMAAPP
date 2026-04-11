@@ -1,0 +1,10 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      // O App utiliza Cloudinary para todos os uploads de mídia.
+      // O bucket padrão do Firebase Storage é completamente bloqueado para evitar abusos.
+      allow read, write: if false;
+    }
+  }
+}
