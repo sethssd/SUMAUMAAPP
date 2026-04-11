@@ -6,6 +6,9 @@ const admin                   = require('firebase-admin');
 admin.initializeApp();
 const db = admin.firestore();
 
+const ROLE_USUARIO = 'usuario';
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. TRIGGER: toda vez que um usuário é criado no Firebase Auth,
 //    cria automaticamente um documento em /users/{uid} com role 'usuario'.
@@ -23,7 +26,7 @@ exports.onUserCreated = auth.user().onCreate(async (user) => {
     uid,
     email:     email ?? '',
     nome:      displayName ?? email?.split('@')[0] ?? '',
-    role:      'usuario',
+    role:      ROLE_USUARIO,
     criadoEm:  admin.firestore.FieldValue.serverTimestamp(),
   });
 });
@@ -49,19 +52,27 @@ exports.syncAllAuthUsers = onCall({ enforceAppCheck: false }, async (request) =>
   let nextPage = undefined;
 
   do {
-    const result = await admin.auth().listUsers(1000, nextPage);
-    const batch  = db.batch();
+    // Busca até 500 para não estourar o limite de 500 operações por batch do Firestore
+    const result = await admin.auth().listUsers(500, nextPage);
+    
+    if (result.users.length === 0) break;
 
-    for (const user of result.users) {
-      const docRef   = db.collection('users').doc(user.uid);
-      const existing = await docRef.get();
+    // Pré-gera os DocumentReferences e executa um único Bulk Read
+    const docRefs = result.users.map(user => db.collection('users').doc(user.uid));
+    const existingDocs = await db.getAll(...docRefs);
+    
+    const batch = db.batch();
+
+    for (let i = 0; i < result.users.length; i++) {
+      const user = result.users[i];
+      const existing = existingDocs[i];
 
       if (!existing.exists) {
-        batch.set(docRef, {
+        batch.set(docRefs[i], {
           uid:      user.uid,
           email:    user.email ?? '',
           nome:     user.displayName ?? user.email?.split('@')[0] ?? '',
-          role:     'usuario',
+          role:     ROLE_USUARIO,
           criadoEm: admin.firestore.FieldValue.serverTimestamp(),
         });
         synced++;

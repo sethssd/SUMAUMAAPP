@@ -3,13 +3,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'firebase_options.dart';
 import 'screens/home_screen.dart';
+import 'utils/app_constants.dart';
 import 'utils/app_theme.dart';
 import 'utils/theme_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await JustAudioBackground.init(
-    androidNotificationChannelId: 'com.example.baderna_apk.channel.audio',
+    androidNotificationChannelId: AppConstants.audioChannelId,
     androidNotificationChannelName: 'Reprodução de Áudio',
     androidNotificationOngoing: true,
     androidNotificationIcon: 'mipmap/launcher_icon',

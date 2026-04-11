@@ -75,8 +75,9 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
     BuildContext context, {
     required String? plantaId,
   }) async {
-    const baseUrl = 'https://badernaapk.web.app/formulario';
-    final urlStr = plantaId != null ? '$baseUrl?id=$plantaId' : baseUrl;
+    final urlStr = plantaId != null
+        ? '${AppConstants.webFormBaseUrl}?id=$plantaId'
+        : AppConstants.webFormBaseUrl;
     final uri = Uri.parse(urlStr);
 
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
@@ -113,7 +114,21 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
             debugPrint('Erro ao carregar plantas: ${snapshot.error}');
             return Center(
               child: Column(
-                // ... (código de erro) ...
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Erro ao carregar plantas.',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${snapshot.error}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             );
           }

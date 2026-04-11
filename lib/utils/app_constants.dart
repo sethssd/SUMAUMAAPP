@@ -3,9 +3,16 @@ class AppConstants {
   static const String collectionUsers = 'users';
   static const String collectionPlants = 'plantas';
 
+  // URLs externas
+  static const String webFormBaseUrl = 'https://badernaapk.web.app/formulario';
+
+  // IDs de sistema
+  static const String audioChannelId = 'br.edu.ufopa.baderna.channel.audio';
+
   // User Roles
   static const String roleSuperAdmin = 'super_admin';
   static const String roleEscritor = 'escritor';
+  static const String roleUsuario = 'usuario';
   static const String roleSemCargo = 'sem_cargo';
 
   // Fields

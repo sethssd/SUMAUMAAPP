@@ -3,15 +3,29 @@ import 'package:flutter/material.dart';
 import '../screens/detail_screen.dart';
 
 class PlantSearchDelegate extends SearchDelegate {
+  // Mantemos o cache em memória das plantas para poder filtrar localmente rápido sem onerar o Firestore.
+  static Future<List<QueryDocumentSnapshot>>? _cachedPlantsFuture;
+
+  PlantSearchDelegate() {
+    _cachedPlantsFuture ??= FirebaseFirestore.instance
+        .collection('plantas')
+        .get()
+        .then((snap) => snap.docs.where((doc) {
+              final data = doc.data() as Map<String, dynamic>?;
+              if (data == null) return false;
+              return data['excluida'] != true;
+            }).toList());
+  }
+
   @override
-  String? get searchFieldLabel => "Buscar por nome ou palavra-chave...";
+  String? get searchFieldLabel => "Buscar por planta...";
 
   @override
   ThemeData appBarTheme(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return theme.copyWith(
       appBarTheme: theme.appBarTheme.copyWith(
-        backgroundColor: Colors.green, // Cor do seu AppBar
+        backgroundColor: theme.colorScheme.primary,
         iconTheme: theme.primaryIconTheme.copyWith(color: Colors.white),
         titleTextStyle: theme.textTheme.titleLarge?.copyWith(
           color: Colors.white,
@@ -22,6 +36,35 @@ class PlantSearchDelegate extends SearchDelegate {
         border: InputBorder.none,
       ),
     );
+  }
+
+  String _removeDiacritics(String str) {
+    var withDia = 'áàãâäéèêëíìîïóòõôöúùûüçñ';
+    var withoutDia = 'aaaaaeeeeiiiiooooouuuucn';
+    String result = str.toLowerCase();
+    for (int i = 0; i < withDia.length; i++) {
+      result = result.replaceAll(withDia[i], withoutDia[i]);
+    }
+    return result;
+  }
+
+  // Verifica se a query está contida no nome, nome_cientifico ou keywords aplicando tolerância a acentos
+  bool _matchQuery(Map<String, dynamic> data, String queryStr) {
+    final searchParam = _removeDiacritics(queryStr);
+    if (searchParam.isEmpty) return true;
+
+    final String nome = _removeDiacritics(data['nome'] ?? '');
+    if (nome.contains(searchParam)) return true;
+
+    final String cientifico = _removeDiacritics(data['nomeCientifico'] ?? '');
+    if (cientifico.contains(searchParam)) return true;
+
+    final keywords = List<String>.from(data['keywords'] ?? []);
+    for (var kw in keywords) {
+      if (_removeDiacritics(kw).contains(searchParam)) return true;
+    }
+
+    return false;
   }
 
   @override
@@ -47,36 +90,30 @@ class PlantSearchDelegate extends SearchDelegate {
     );
   }
 
-  // MUDANÇA PRINCIPAL AQUI
-  @override
-  Widget buildResults(BuildContext context) {
-    if (query.isEmpty) {
-      return const Center(child: Text("Digite algo para buscar."));
-    }
-
-    // Prepara a query para buscar em minúsculas
-    final String searchQuery = query.toLowerCase().trim();
-
-    return FutureBuilder<QuerySnapshot>(
-      // Usamos 'array-contains' no campo 'keywords'
-      future: FirebaseFirestore.instance
-          .collection('plantas')
-          .where('keywords', arrayContains: searchQuery)
-          .get(),
+  Widget _buildList(BuildContext context) {
+    return FutureBuilder<List<QueryDocumentSnapshot>>(
+      future: _cachedPlantsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return const Center(child: Text("Erro ao buscar. Tente novamente."));
+          return const Center(child: Text("Erro ao carregar dados."));
         }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Text("Nenhuma planta encontrada para '$query'."),
-          );
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text("Banco de dados vazio."));
         }
 
-        final results = snapshot.data!.docs;
+        // Filtra em RAM localmente com base no cache (MUITO rápido, tolera substrings e acentos)
+        final results = snapshot.data!.where((doc) {
+          return _matchQuery(doc.data() as Map<String, dynamic>, query);
+        }).toList();
+
+        if (results.isEmpty) {
+          return Center(
+            child: Text("Nenhuma correspondência para '$query'."),
+          );
+        }
 
         return ListView.builder(
           itemCount: results.length,
@@ -104,15 +141,27 @@ class PlantSearchDelegate extends SearchDelegate {
   }
 
   @override
+  Widget buildResults(BuildContext context) {
+    if (query.isEmpty) {
+      return const Center(child: Text("Digite algo para buscar."));
+    }
+    return _buildList(context);
+  }
+
+  @override
   Widget buildSuggestions(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Text(
-          "Digite o nome da planta (ex: Açaí) e pressione 'Buscar'.",
-          textAlign: TextAlign.center,
+    if (query.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            "Digite o nome da planta (ex: Açaí) ou palavra chave e pressione 'Buscar'.",
+            textAlign: TextAlign.center,
+          ),
         ),
-      ),
-    );
+      );
+    }
+    // Graças ao cache, buildSuggestions processa instantaneamente a busca parcial a cada tecla
+    return _buildList(context);
   }
 }
