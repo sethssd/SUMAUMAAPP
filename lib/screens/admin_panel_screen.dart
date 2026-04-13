@@ -17,22 +17,81 @@ class AdminPanelScreen extends StatefulWidget {
 class _AdminPanelScreenState extends State<AdminPanelScreen> {
   String _userRole = AppConstants.statusCarregando;
 
+  final int _limit = 20;
+  bool _isInitialLoadingPlants = true;
+  bool _isLoadingMorePlants = false;
+  bool _hasMorePlants = true;
+  List<DocumentSnapshot> _plantas = [];
+  DocumentSnapshot? _lastDoc;
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     _loadUserRole();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        if (!_isLoadingMorePlants && _hasMorePlants && _userRole == AppConstants.roleSuperAdmin) {
+          _fetchPlantas();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserRole() async {
     final role = await AuthService().getUserRole();
     if (mounted) {
       setState(() => _userRole = role);
+      if (role == AppConstants.roleSuperAdmin) {
+        _fetchPlantas();
+      }
+    }
+  }
+
+  Future<void> _fetchPlantas() async {
+    if (_isLoadingMorePlants) return;
+    
+    if (_isInitialLoadingPlants) {
+      setState(() {});
+    } else {
+      setState(() => _isLoadingMorePlants = true);
+    }
+    
+    try {
+      Query query = FirebaseFirestore.instance.collection(AppConstants.collectionPlants).limit(_limit);
+      if (_lastDoc != null) {
+        query = query.startAfterDocument(_lastDoc!);
+      }
+      final snapshot = await query.get();
+      if (snapshot.docs.length < _limit) {
+        _hasMorePlants = false;
+      }
+      if (snapshot.docs.isNotEmpty) {
+        _lastDoc = snapshot.docs.last;
+        _plantas.addAll(snapshot.docs);
+      }
+    } catch (e) {
+      debugPrint("Erro carregar plantas admin: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isInitialLoadingPlants = false;
+          _isLoadingMorePlants = false;
+        });
+      }
     }
   }
 
   Future<void> _openWebForm({String? plantaId}) async {
-    const baseUrl = 'https://badernaapk.web.app/formulario';
-    final urlStr = plantaId != null ? '$baseUrl?id=$plantaId' : baseUrl;
+    final urlStr = plantaId != null
+        ? '${AppConstants.webFormBaseUrl}?id=$plantaId'
+        : AppConstants.webFormBaseUrl;
     final uri = Uri.parse(urlStr);
 
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
@@ -69,7 +128,12 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
           .collection(AppConstants.collectionPlants)
           .doc(id)
           .update({'excluida': true});
+          
+      // Otimização: remover localmente para a interface refletir mais rápido sem carregar de novo.
       if (mounted) {
+        setState(() {
+          _plantas.removeWhere((doc) => doc.id == id);
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('"$nome" enviada para a lixeira.')),
         );
@@ -106,6 +170,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
       body: _userRole == AppConstants.statusCarregando
           ? const Center(child: CircularProgressIndicator())
           : ListView(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16),
               children: [
                 // ── HEADER ──
@@ -262,85 +327,66 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   }
 
   Widget _buildAllPlantsList(bool isDark) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection(AppConstants.collectionPlants)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
+    if (_isInitialLoadingPlants) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
-        if (snapshot.hasError) {
-          return Center(child: Text('Erro: ${snapshot.error}'));
-        }
+    final filteredPlantas = _plantas.where((doc) {
+      final data = doc.data() as Map<String, dynamic>?;
+      if (data == null) return false;
+      return data['excluida'] != true;
+    }).toList();
 
-        final plantas = snapshot.data!.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return data['excluida'] != true;
-        }).toList();
+    if (filteredPlantas.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text('Nenhuma planta cadastrada.'),
+        ),
+      );
+    }
 
-        if (plantas.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: Text('Nenhuma planta cadastrada.'),
-            ),
-          );
-        }
+    return Column(
+      children: [
+        ...filteredPlantas.map((planta) {
+          final data = planta.data() as Map<String, dynamic>;
+          final String nome = data[AppConstants.fieldNome] ?? 'Sem nome';
+          final String cientifico = data[AppConstants.fieldNomeCientifico] ?? '';
+          final String? imagemUrl = data['imagemUrl'];
 
-        return Column(
-          children: plantas.map((planta) {
-            final data = planta.data() as Map<String, dynamic>;
-            final String nome = data[AppConstants.fieldNome] ?? 'Sem nome';
-            final String cientifico =
-                data[AppConstants.fieldNomeCientifico] ?? '';
-            final String? imagemUrl = data['imagemUrl'];
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
                 color: isDark
-                    ? Colors.white.withValues(alpha: 0.04)
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark
-                      ? SumaColors.darkDivider
-                      : const Color(0xFFE0EDE4),
-                ),
+                    ? SumaColors.darkDivider
+                    : const Color(0xFFE0EDE4),
               ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: imagemUrl != null && imagemUrl.isNotEmpty
-                        ? Image.network(
-                            imagemUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: SumaColors.greenBright.withValues(
-                                alpha: 0.1,
-                              ),
-                              child: Icon(
-                                Icons.eco_rounded,
-                                color: SumaColors.greenBright,
-                                size: 22,
-                              ),
-                            ),
-                          )
-                        : Container(
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 4,
+              ),
+              leading: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: imagemUrl != null && imagemUrl.isNotEmpty
+                      ? Image.network(
+                          imagemUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
                             color: SumaColors.greenBright.withValues(
                               alpha: 0.1,
                             ),
@@ -350,53 +396,68 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                               size: 22,
                             ),
                           ),
-                  ),
-                ),
-                title: Text(
-                  nome,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : const Color(0xFF1A1A2E),
-                  ),
-                ),
-                subtitle: cientifico.isNotEmpty
-                    ? Text(
-                        cientifico,
-                        style: TextStyle(
-                          fontStyle: FontStyle.italic,
-                          fontSize: 13,
-                          color: SumaColors.greenBright,
+                        )
+                      : Container(
+                          color: SumaColors.greenBright.withValues(
+                            alpha: 0.1,
+                          ),
+                          child: Icon(
+                            Icons.eco_rounded,
+                            color: SumaColors.greenBright,
+                            size: 22,
+                          ),
                         ),
-                      )
-                    : null,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.edit_rounded,
-                        color: SumaColors.greenBright,
-                        size: 20,
-                      ),
-                      tooltip: 'Editar planta',
-                      onPressed: () => _openWebForm(plantaId: planta.id),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline_rounded,
-                        color: Colors.redAccent,
-                        size: 20,
-                      ),
-                      tooltip: 'Remover planta',
-                      onPressed: () => _deletePlant(planta.id, nome),
-                    ),
-                  ],
                 ),
               ),
-            );
-          }).toList(),
-        );
-      },
+              title: Text(
+                nome,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                ),
+              ),
+              subtitle: cientifico.isNotEmpty
+                  ? Text(
+                      cientifico,
+                      style: TextStyle(
+                        fontStyle: FontStyle.italic,
+                        fontSize: 13,
+                        color: SumaColors.greenBright,
+                      ),
+                    )
+                  : null,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.edit_rounded,
+                      color: SumaColors.greenBright,
+                      size: 20,
+                    ),
+                    tooltip: 'Editar planta',
+                    onPressed: () => _openWebForm(plantaId: planta.id),
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Colors.redAccent,
+                      size: 20,
+                    ),
+                    tooltip: 'Remover planta',
+                    onPressed: () => _deletePlant(planta.id, nome),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+        if (_isLoadingMorePlants)
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Center(child: CircularProgressIndicator()),
+          )
+      ],
     );
   }
 }
