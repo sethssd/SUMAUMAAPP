@@ -312,9 +312,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                   : () async {
                       setState(() => _isLoading = true);
                       final userCred = await AuthService().signInWithGoogle();
-                      if (mounted) setState(() => _isLoading = false);
-
-                      if (userCred != null && mounted) {
+                      if (!context.mounted) return;
+                      setState(() => _isLoading = false);
+                      if (userCred != null) {
                         Navigator.pop(context); // Fechar tela de login e voltar logado
                       }
                     },

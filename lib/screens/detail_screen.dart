@@ -7,13 +7,16 @@ import '../widgets/detail/detail_3d_viewer.dart';
 import '../widgets/detail/tabs/geral_tab.dart';
 import '../widgets/detail/tabs/cientifico_tab.dart';
 import '../widgets/detail/tabs/referencias_tab.dart';
+import '../widgets/detail/detail_audio_player.dart' as import_detail_audio_player;
 
 /// Tela de detalhes de uma planta.
 /// Responsabilidades: fetch do Firestore (cache-first), controle das 3 abas
 /// e injeção do PlantModel nos sub-widgets do diretório widgets/detail/.
 class DetailScreen extends StatefulWidget {
   final String plantaId;
-  const DetailScreen({super.key, required this.plantaId});
+  /// Índice da aba a abrir ao entrar na tela (0=Geral, 1=Científico, 2=Artigos).
+  final int initialTab;
+  const DetailScreen({super.key, required this.plantaId, this.initialTab = 0});
 
   @override
   State<DetailScreen> createState() => _DetailScreenState();
@@ -28,7 +31,11 @@ class _DetailScreenState extends State<DetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: widget.initialTab.clamp(0, 2),
+    );
     _loadPlantaData();
   }
 
@@ -135,29 +142,79 @@ class _DetailScreenState extends State<DetailScreen>
               ),
             ]),
           ),
-          if (plant.modelo3dUrl.isNotEmpty)
+          if (plant.modelo3dUrl.isNotEmpty || (plant.audioDescricaoUrl?.isNotEmpty ?? false))
             SafeArea(
               top: false,
               child: Container(
                 color: isDark ? SumaColors.darkBg : const Color(0xFFF6FBF7),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => Detail3dViewer(url: plant.modelo3dUrl, nome: plant.nome)),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF16593A),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        elevation: 0,
-                      ),
-                      child: const Text('Modelo 3D', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
-                    ),
+                  child: Row(
+                    children: [
+                      if (plant.modelo3dUrl.isNotEmpty)
+                        Expanded(
+                          child: SizedBox(
+                            height: 52,
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.view_in_ar),
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => Detail3dViewer(url: plant.modelo3dUrl, nome: plant.nome)),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF16593A),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                elevation: 0,
+                              ),
+                              label: const Text('Modelo 3D', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+                            ),
+                          ),
+                        ),
+                      if (plant.modelo3dUrl.isNotEmpty && (plant.audioDescricaoUrl?.isNotEmpty ?? false))
+                        const SizedBox(width: 12),
+                      if (plant.audioDescricaoUrl?.isNotEmpty ?? false)
+                        Expanded(
+                          child: SizedBox(
+                            height: 52,
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.hearing),
+                              onPressed: () {
+                                // Exibir modal ou abrir player de audiodescrição
+                                showModalBottomSheet(
+                                  context: context,
+                                  backgroundColor: isDark ? SumaColors.darkBg : Colors.white,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                                  ),
+                                  builder: (_) => Padding(
+                                    padding: const EdgeInsets.all(24.0),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Text('Áudiodescrição', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                                        const SizedBox(height: 16),
+                                        import_detail_audio_player.SumaAudioPlayer(
+                                          audioUrl: plant.audioDescricaoUrl!,
+                                          title: 'Áudiodescrição: ${plant.nome}',
+                                        ),
+                                        const SizedBox(height: 24),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: SumaColors.greenBright,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                elevation: 0,
+                              ),
+                              label: const Text('Áudiodescrição', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),

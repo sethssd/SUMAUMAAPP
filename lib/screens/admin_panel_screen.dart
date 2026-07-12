@@ -21,7 +21,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
   bool _isInitialLoadingPlants = true;
   bool _isLoadingMorePlants = false;
   bool _hasMorePlants = true;
-  List<DocumentSnapshot> _plantas = [];
+  final List<DocumentSnapshot> _plantas = [];
   DocumentSnapshot? _lastDoc;
   final ScrollController _scrollController = ScrollController();
 
