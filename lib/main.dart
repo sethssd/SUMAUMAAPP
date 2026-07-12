@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'firebase_options.dart';
-import 'screens/home_screen.dart';
 import 'utils/app_constants.dart';
 import 'utils/app_theme.dart';
+import 'utils/auth_gate.dart';
 import 'utils/theme_controller.dart';
 
 void main() async {
@@ -24,8 +24,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ValueListenableBuilder reconstrói apenas o MaterialApp
-    // quando o themeController mudar — sem nenhum pacote extra.
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeController,
       builder: (context, mode, _) {
@@ -35,7 +33,9 @@ class MyApp extends StatelessWidget {
           themeMode: mode,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
-          home: const HomeScreen(),
+          // AuthGate decide entre PublicLoginScreen e HomeScreen
+          // com base no estado de autenticação do Firebase.
+          home: const AuthGate(),
         );
       },
     );

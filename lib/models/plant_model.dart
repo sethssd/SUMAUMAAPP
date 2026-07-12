@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Modelo tipado que mapeia os campos de um documento Firestore da coleção 'plantas'.
-/// Utilizar este modelo em vez de Map<String, dynamic> elimina typos silenciosos
+/// Utilizar este modelo em vez de `Map<String, dynamic>` elimina typos silenciosos
 /// nos nomes de campos e facilita refatorações futuras.
 class PlantModel {
   final String id;
@@ -32,6 +32,13 @@ class PlantModel {
   final List<String> referenciaGeral;
   final List<dynamic>? referenciasCientificas;
   final List<String> referenciasFarmacologicas;
+  /// Categoria da planta (ex: 'Medicinais', 'Frutíferas', 'Aromáticas').
+  final String categoria;
+  /// Data/hora em que a planta foi cadastrada no Firestore.
+  final DateTime? dataCriacao;
+  final String? audioDescricaoUrl;
+  final List<Map<String, dynamic>>? cuidadosAvancados;
+  final List<Map<String, dynamic>>? locais;
 
   const PlantModel({
     required this.id,
@@ -62,6 +69,11 @@ class PlantModel {
     required this.referenciaGeral,
     this.referenciasCientificas,
     required this.referenciasFarmacologicas,
+    required this.categoria,
+    this.dataCriacao,
+    this.audioDescricaoUrl,
+    this.cuidadosAvancados,
+    this.locais,
   });
 
   static List<String> _parseList(dynamic value) {
@@ -106,6 +118,15 @@ class PlantModel {
       referenciaGeral: _parseList(data['referenciaGeral']),
       referenciasCientificas: data['referenciasCientificas'] as List<dynamic>?,
       referenciasFarmacologicas: _parseList(data['referenciasFarmacologicas']),
+      categoria: data['categoria'] ?? '',
+      dataCriacao: (data['dataCriacao'] as Timestamp?)?.toDate(),
+      audioDescricaoUrl: data['audioDescricaoUrl'],
+      cuidadosAvancados: data['cuidadosAvancados'] != null
+          ? List<Map<String, dynamic>>.from(data['cuidadosAvancados'])
+          : null,
+      locais: data['locais'] != null
+          ? List<Map<String, dynamic>>.from(data['locais'])
+          : null,
     );
   }
 }
