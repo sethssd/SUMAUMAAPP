@@ -52,6 +52,10 @@ dependencies:
   audio_session: ^0.2.3
   just_audio_background: ^0.0.1-beta.17
   flutter_svg: ^2.2.4
+  sign_in_with_apple: ^6.1.2
+  flutter_facebook_auth: ^7.1.1
+  carousel_slider: ^5.0.0
+  flutter_animate: ^4.5.0
 
 dev_dependencies:
   flutter_test:

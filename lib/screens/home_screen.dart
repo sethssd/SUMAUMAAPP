@@ -1,10 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'detail_screen.dart';
-import '../widgets/side_menu.dart';
+import '../models/destaque_model.dart';
+import '../models/plant_model.dart';
+import '../widgets/home/category_chip_bar.dart';
+import '../widgets/home/destaque_carousel.dart';
+import '../widgets/home/plant_card.dart';
+import '../widgets/home/recentes_carousel.dart';
 import '../widgets/plant_search_delegate.dart';
+import '../widgets/side_menu.dart';
+import '../utils/app_theme.dart';
 
-// necessita de mais atenção, melhorar padroes de busca e otimizar codigos
+// ── Constantes ────────────────────────────────────────────────────────────────
+
+const int _kPageSize = 20;
+const int _kRecentesLimit = 10;
+
+// Categorias exibidas nos chips. Pode ser ampliada sem alterar a lógica.
+const List<String> _kCategories = [
+  'Medicinais',
+  'Frutíferas',
+  'Aromáticas',
+  'Madeireiras',
+  'Ornamentais',
+  'Alimentícias',
+  'Tóxicas',
+  'Aquáticas',
+];
+
+// ── HomeScreen ────────────────────────────────────────────────────────────────
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -13,25 +37,28 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final int _limit = 20;
+  // ── Estado: paginação de plantas ──────────────────────────
   bool _isInitialLoading = true;
   bool _isLoadingMore = false;
   bool _hasMore = true;
-  List<DocumentSnapshot> _plantas = [];
+  final List<DocumentSnapshot> _plantaDocs = [];
   DocumentSnapshot? _lastDoc;
   final ScrollController _scrollController = ScrollController();
+
+  // ── Estado: categoria selecionada ─────────────────────────
+  String? _selectedCategory;
+
+  // ── Estado: carrosséis ────────────────────────────────────
+  List<DestaqueModel> _destaques = [];
+  List<PlantModel> _recentes = [];
+  bool _carouselLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchPlantas();
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-        if (!_isLoadingMore && _hasMore) {
-          _fetchPlantas();
-        }
-      }
-    });
+    _fetchCarousels();
+    _fetchPlantas(reset: true);
+    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -40,34 +67,98 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchPlantas() async {
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 300) {
+      if (!_isLoadingMore && _hasMore) {
+        _fetchPlantas();
+      }
+    }
+  }
+
+  // ── Fetch destaques + recentes (paralelo) ─────────────────
+
+  Future<void> _fetchCarousels() async {
+    try {
+      final results = await Future.wait([
+        FirebaseFirestore.instance
+            .collection('destaques')
+            .orderBy('ordem')
+            .get(),
+        FirebaseFirestore.instance
+            .collection('plantas')
+            .where('excluida', isNotEqualTo: true)
+            .orderBy('dataCriacao', descending: true)
+            .limit(_kRecentesLimit)
+            .get(),
+      ]);
+
+      final destaquesDocs = results[0].docs;
+      final recentesDocs = results[1].docs;
+
+      if (!mounted) return;
+      setState(() {
+        _destaques = destaquesDocs
+            .map((d) => DestaqueModel.fromSnapshot(d))
+            .toList();
+        _recentes = recentesDocs
+            .where((d) {
+              final data = d.data() as Map<String, dynamic>?;
+              return data != null && data['excluida'] != true;
+            })
+            .map((d) => PlantModel.fromSnapshot(d))
+            .toList();
+        _carouselLoaded = true;
+      });
+    } catch (e) {
+      debugPrint('Erro ao carregar carrosséis: $e');
+      if (mounted) setState(() => _carouselLoaded = true);
+    }
+  }
+
+  // ── Fetch paginado de plantas com filtro de categoria ──────
+
+  Future<void> _fetchPlantas({bool reset = false}) async {
     if (_isLoadingMore) return;
-    
-    if (_isInitialLoading) {
-      setState(() {});
+
+    if (reset) {
+      setState(() {
+        _isInitialLoading = true;
+        _plantaDocs.clear();
+        _lastDoc = null;
+        _hasMore = true;
+      });
     } else {
       setState(() => _isLoadingMore = true);
     }
-    
+
     try {
-      Query query = FirebaseFirestore.instance.collection('plantas').limit(_limit);
-      
-      if (_lastDoc != null) {
+      Query query = FirebaseFirestore.instance
+          .collection('plantas')
+          .where('excluida', isNotEqualTo: true)
+          .limit(_kPageSize);
+
+      if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
+        query = FirebaseFirestore.instance
+            .collection('plantas')
+            .where('excluida', isNotEqualTo: true)
+            .where('categoria', isEqualTo: _selectedCategory)
+            .limit(_kPageSize);
+      }
+
+      if (_lastDoc != null && !reset) {
         query = query.startAfterDocument(_lastDoc!);
       }
-      
+
       final snapshot = await query.get();
-      
-      if (snapshot.docs.length < _limit) {
-        _hasMore = false;
-      }
-      
+
+      if (snapshot.docs.length < _kPageSize) _hasMore = false;
       if (snapshot.docs.isNotEmpty) {
         _lastDoc = snapshot.docs.last;
-        _plantas.addAll(snapshot.docs);
+        _plantaDocs.addAll(snapshot.docs);
       }
     } catch (e) {
-      debugPrint("Erro ao carregar plantas: $e");
+      debugPrint('Erro ao carregar plantas: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -78,126 +169,184 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _onCategorySelected(String? cat) {
+    if (_selectedCategory == cat) return;
+    setState(() => _selectedCategory = cat);
+    _fetchPlantas(reset: true);
+  }
+
+  // ── Build ──────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Sumaúma"),
-        leading: Builder(
-          builder: (context) {
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-            return GestureDetector(
-              onTap: () => Scaffold.of(context).openDrawer(),
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Image.asset(
-                  isDark ? 'icons/ico-branco.png' : 'icons/ico-verde.png',
-                  fit: BoxFit.contain,
-                ),
+        title: const Text('Sumaúma'),
+        leading: Builder(builder: (ctx) {
+          return GestureDetector(
+            onTap: () => Scaffold.of(ctx).openDrawer(),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Image.asset(
+                isDark ? 'icons/ico-branco.png' : 'icons/ico-verde.png',
+                fit: BoxFit.contain,
               ),
-            );
-          },
-        ),
+            ),
+          );
+        }),
         actions: [
-          // Ícone de Pesquisa (Foto 1)
           IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // 2. CHAMADA A FUNÇÃO DE BUSCA
-              showSearch(context: context, delegate: PlantSearchDelegate());
-            },
+            icon: const Icon(Icons.search_rounded),
+            tooltip: 'Buscar',
+            onPressed: () =>
+                showSearch(context: context, delegate: PlantSearchDelegate()),
           ),
         ],
       ),
       drawer: const SideMenu(),
-      body: _buildBody(),
+      body: _isInitialLoading && !_carouselLoaded
+          ? const Center(child: CircularProgressIndicator())
+          : _buildBody(isDark),
     );
   }
 
-  Widget _buildBody() {
-    if (_isInitialLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+  Widget _buildBody(bool isDark) {
+    final plantas = _plantaDocs.map((doc) {
+      try {
+        return PlantModel.fromSnapshot(doc);
+      } catch (_) {
+        return null;
+      }
+    }).whereType<PlantModel>().toList();
 
-    final filteredPlantas = _plantas.where((doc) {
-      final data = doc.data() as Map<String, dynamic>?;
-      if (data == null) return false;
-      return data['excluida'] != true;
-    }).toList();
-
-    if (filteredPlantas.isEmpty) {
-      return const Center(child: Text("Nenhuma planta encontrada."));
-    }
-
-    return ListView.builder(
+    return CustomScrollView(
       controller: _scrollController,
-      itemCount: filteredPlantas.length + (_hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == filteredPlantas.length) {
-          return const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
+      slivers: [
+        // ── Espaço inicial ─────────────────────────────────
+        const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-        final planta = filteredPlantas[index];
-        final data = planta.data() as Map<String, dynamic>;
+        // ── Carrossel Destaques ────────────────────────────
+        if (_destaques.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: DestaqueCarousel(destaques: _destaques),
+            ),
+          ),
 
-        final String modelo3dUrl = data['modelo3dUrl'] ?? '';
-        final bool hasModel3D = modelo3dUrl.isNotEmpty;
+        // ── Carrossel Adicionados Recentemente ─────────────
+        if (_recentes.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: RecentesCarousel(plantas: _recentes),
+            ),
+          ),
 
-        return Card(
-          margin: const EdgeInsets.all(8.0),
-          child: ListTile(
-            leading: ClipRRect(
-              borderRadius: BorderRadius.circular(12.0),
-              child: Stack(
-                children: [
-                  Image.network(
-                    data['imagemUrl'] ?? 'https://via.placeholder.com/100',
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(
-                          Icons.image_not_supported,
-                          size: 60,
-                          color: Colors.grey,
-                        ),
+        // ── Cabeçalho "Todas as Plantas" ───────────────────
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 4, height: 18,
+                  decoration: BoxDecoration(
+                    color: SumaColors.greenBright,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  if (hasModel3D)
-                    Positioned(
-                      bottom: 2,
-                      right: 2,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.7),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.threesixty,
-                          color: Colors.white,
-                          size: 16,
-                        ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _selectedCategory != null
+                      ? _selectedCategory!.toUpperCase()
+                      : 'TODAS AS PLANTAS',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                    color: isDark ? Colors.white70 : SumaColors.greenDeep,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // ── Chips de categoria ─────────────────────────────
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: CategoryChipBar(
+              categories: _kCategories,
+              selected: _selectedCategory,
+              onSelected: _onCategorySelected,
+            ),
+          ),
+        ),
+
+        // ── Lista de plantas ───────────────────────────────
+        _isInitialLoading
+            ? const SliverFillRemaining(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : plantas.isEmpty
+                ? SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.eco_outlined,
+                            size: 64,
+                            color: isDark ? Colors.white24 : Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _selectedCategory != null
+                                ? 'Nenhuma planta em "$_selectedCategory".'
+                                : 'Nenhuma planta cadastrada.',
+                            style: TextStyle(
+                              color: isDark ? Colors.white54 : Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                ],
-              ),
-            ),
-            title: Text(data['nome'] ?? 'Nome não encontrado'),
-            subtitle: Text(data['descricaoCurta'] ?? 'Sem descrição'),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DetailScreen(plantaId: planta.id),
-                ),
-              );
-            },
-          ),
-        );
-      },
+                  )
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index == plantas.length) {
+                          // Carregador de "página seguinte"
+                          return _hasMore
+                              ? const Padding(
+                                  padding: EdgeInsets.all(24),
+                                  child: Center(child: CircularProgressIndicator()),
+                                )
+                              : Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Text(
+                                    'Todas as plantas carregadas.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark ? Colors.white38 : Colors.grey.shade400,
+                                    ),
+                                  ),
+                                );
+                        }
+                        return PlantCard(plant: plantas[index]);
+                      },
+                      childCount: plantas.length + 1,
+                    ),
+                  ),
+
+        // ── Padding final ─────────────────────────────────
+        const SliverToBoxAdapter(child: SizedBox(height: 32)),
+      ],
     );
   }
 }

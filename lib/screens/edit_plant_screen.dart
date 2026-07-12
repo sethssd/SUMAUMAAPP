@@ -31,6 +31,17 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
   final _referenciasFarmacologicasController = TextEditingController();
   final _referenciaGeralController = TextEditingController();
   final _keywordsController = TextEditingController();
+  final _categoriaController = TextEditingController();
+  final _audioDescricaoUrlController = TextEditingController();
+  
+  // MVP: campos simples para o 1º item de cuidados avançados e locais
+  String _cuidadoNivel = 'avisoGeral';
+  final _cuidadoDescricaoController = TextEditingController();
+  final _cuidadoDoseController = TextEditingController();
+  
+  final _localNomeController = TextEditingController();
+  final _localEnderecoController = TextEditingController();
+  final _localAvaliacaoController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
@@ -98,6 +109,22 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
           data['referenciaGeral'],
         );
         _keywordsController.text = _parseListFieldToString(data['keywords']);
+        _categoriaController.text = data['categoria'] ?? '';
+        _audioDescricaoUrlController.text = data['audioDescricaoUrl'] ?? '';
+
+        if (data['cuidadosAvancados'] != null && (data['cuidadosAvancados'] as List).isNotEmpty) {
+          final firstCuidado = data['cuidadosAvancados'][0];
+          _cuidadoNivel = firstCuidado['nivel'] ?? 'avisoGeral';
+          _cuidadoDescricaoController.text = firstCuidado['descricao'] ?? '';
+          _cuidadoDoseController.text = firstCuidado['doseRecomendada'] ?? '';
+        }
+
+        if (data['locais'] != null && (data['locais'] as List).isNotEmpty) {
+          final firstLocal = data['locais'][0];
+          _localNomeController.text = firstLocal['nomeLocal'] ?? '';
+          _localEnderecoController.text = firstLocal['endereco'] ?? '';
+          _localAvaliacaoController.text = (firstLocal['avaliacaoMedia'] ?? '').toString();
+        }
       }
     } catch (e) {
       debugPrint("Erro ao carregar dados da planta: $e");
@@ -210,6 +237,33 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
     }
   }
 
+  Future<void> _pickAndUploadAudioDesc() async {
+    setState(() => _isUploadingAudio = true); // Reaproveitando o state de loading de audio
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio, withData: true);
+      if (result == null) {
+        setState(() => _isUploadingAudio = false);
+        return;
+      }
+      final fileBytes = result.files.single.bytes;
+      final fileName = result.files.single.name;
+      CloudinaryFile cloudinaryFile;
+      if (fileBytes != null) {
+        cloudinaryFile = CloudinaryFile.fromByteData(fileBytes.buffer.asByteData(), identifier: fileName, resourceType: CloudinaryResourceType.Video);
+      } else {
+        cloudinaryFile = CloudinaryFile.fromFile(result.files.single.path!, resourceType: CloudinaryResourceType.Video);
+      }
+      CloudinaryResponse response = await cloudinary.uploadFile(cloudinaryFile);
+      setState(() {
+        _audioDescricaoUrlController.text = response.secureUrl;
+        _isUploadingAudio = false;
+      });
+    } catch (e) {
+      setState(() => _isUploadingAudio = false);
+      debugPrint("Erro no upload da audiodescrição: \$e");
+    }
+  }
+
   // 6.  _savePlanta
   Future<void> _savePlanta() async {
     if (!_formKey.currentState!.validate()) return;
@@ -248,6 +302,19 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
           .map((e) => e.trim())
           .toList(),
       'keywords': keywords,
+      'categoria': _categoriaController.text,
+      'audioDescricaoUrl': _audioDescricaoUrlController.text,
+      'cuidadosAvancados': _cuidadoDescricaoController.text.isNotEmpty ? [{
+        'nivel': _cuidadoNivel,
+        'descricao': _cuidadoDescricaoController.text,
+        'doseRecomendada': _cuidadoDoseController.text,
+      }] : [],
+      'locais': _localNomeController.text.isNotEmpty ? [{
+        'nomeLocal': _localNomeController.text,
+        'endereco': _localEnderecoController.text,
+        'avaliacaoMedia': double.tryParse(_localAvaliacaoController.text) ?? 0.0,
+        'reviews': [],
+      }] : [],
     };
 
     try {
@@ -326,6 +393,12 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                       ),
                     ),
                     TextFormField(
+                      controller: _categoriaController,
+                      decoration: const InputDecoration(
+                        labelText: 'Categoria (ex: Medicinais)',
+                      ),
+                    ),
+                    TextFormField(
                       controller: _descricaoCurtaController,
                       decoration: const InputDecoration(
                         labelText: 'Descrição Curta (para lista)',
@@ -394,6 +467,56 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                               ),
                       ),
                       readOnly: _isUploadingAudio,
+                    ),
+
+                    // CAMPO DE ÁUDIO DESCRIÇÃO
+                    TextFormField(
+                      controller: _audioDescricaoUrlController,
+                      decoration: InputDecoration(
+                        labelText: 'URL da Áudiodescrição (.mp3)',
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.audio_file),
+                          onPressed: _pickAndUploadAudioDesc,
+                        ),
+                      ),
+                    ),
+
+                    const Divider(height: 30),
+                    const Text('Cuidados e Segurança (MVP 1 item)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    DropdownButtonFormField<String>(
+                      initialValue: _cuidadoNivel,
+                      decoration: const InputDecoration(labelText: 'Nível de Segurança'),
+                      items: const [
+                        DropdownMenuItem(value: 'avisoGeral', child: Text('Aviso Geral (Azul)')),
+                        DropdownMenuItem(value: 'cuidadoSeguro', child: Text('Cuidado Seguro (Verde)')),
+                        DropdownMenuItem(value: 'atencao', child: Text('Atenção (Laranja)')),
+                        DropdownMenuItem(value: 'cuidadoPerigo', child: Text('Perigo (Vermelho)')),
+                      ],
+                      onChanged: (v) => setState(() => _cuidadoNivel = v ?? 'avisoGeral'),
+                    ),
+                    TextFormField(
+                      controller: _cuidadoDescricaoController,
+                      decoration: const InputDecoration(labelText: 'Descrição do Cuidado'),
+                    ),
+                    TextFormField(
+                      controller: _cuidadoDoseController,
+                      decoration: const InputDecoration(labelText: 'A Dose Certa (Opcional)'),
+                    ),
+
+                    const Divider(height: 30),
+                    const Text('Onde Encontrar (MVP 1 local)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    TextFormField(
+                      controller: _localNomeController,
+                      decoration: const InputDecoration(labelText: 'Nome do Local'),
+                    ),
+                    TextFormField(
+                      controller: _localEnderecoController,
+                      decoration: const InputDecoration(labelText: 'Endereço'),
+                    ),
+                    TextFormField(
+                      controller: _localAvaliacaoController,
+                      decoration: const InputDecoration(labelText: 'Avaliação Média (ex: 4.5)'),
+                      keyboardType: TextInputType.number,
                     ),
 
                     const Divider(height: 30),

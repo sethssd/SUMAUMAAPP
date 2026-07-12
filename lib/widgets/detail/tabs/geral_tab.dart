@@ -5,6 +5,8 @@ import '../../../models/plant_model.dart';
 import '../../../utils/app_theme.dart';
 import '../detail_audio_player.dart';
 import '../detail_premium_card.dart';
+import '../location_review_card.dart';
+import '../safety_legend.dart';
 
 /// Aba Geral: descrição, taxonomia, fenologia, usos, localização, benefícios, segurança e áudio.
 class GeralTab extends StatelessWidget {
@@ -62,7 +64,10 @@ class GeralTab extends StatelessWidget {
               content: plant.usosEValorEconomico,
             ),
 
-          _buildLocationSection(context, plant.distribuicaoHabitat, isDark),
+          if (plant.locais != null && plant.locais!.isNotEmpty)
+            LocationReviewCard(locais: plant.locais!)
+          else
+            _buildLocationSection(context, plant.distribuicaoHabitat, isDark),
 
           if (plant.beneficios.isNotEmpty)
             DetailPremiumCard(
@@ -85,8 +90,8 @@ class GeralTab extends StatelessWidget {
               ),
             ),
 
-          if (plant.comoUsar.isNotEmpty || plant.cuidados.isNotEmpty)
-            _buildSafetySection(context, plant.comoUsar, plant.cuidados, isDark),
+          if (plant.comoUsar.isNotEmpty || plant.cuidados.isNotEmpty || (plant.cuidadosAvancados != null && plant.cuidadosAvancados!.isNotEmpty))
+            _buildSafetySection(context, plant.comoUsar, plant.cuidados, plant.cuidadosAvancados, isDark),
         ],
       ),
     );
@@ -137,7 +142,7 @@ class GeralTab extends StatelessWidget {
     );
   }
 
-  Widget _buildSafetySection(BuildContext context, String comoUsar, String cuidados, bool isDark) {
+  Widget _buildSafetySection(BuildContext context, String comoUsar, String cuidados, List<Map<String, dynamic>>? cuidadosAvancados, bool isDark) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         SvgPicture.asset('assets/icons/medicinais/imunidade.svg', width: 22, colorFilter: const ColorFilter.mode(Colors.white70, BlendMode.srcIn)),
@@ -145,6 +150,13 @@ class GeralTab extends StatelessWidget {
         Text('Como usar com segurança?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF1A1A2E))),
       ]),
       const SizedBox(height: 16),
+      
+      if (cuidadosAvancados != null && cuidadosAvancados.isNotEmpty) ...[
+        const SafetyLegend(),
+        const SizedBox(height: 16),
+        ...cuidadosAvancados.map((c) => CuidadoAvancadoCard(cuidado: c)),
+      ],
+
       if (comoUsar.isNotEmpty)
         _safetyBlock(isDark, SumaColors.greenBright, 'assets/icons/ficha/folha.svg', 'Chás e Banhos', comoUsar),
       if (cuidados.isNotEmpty)
