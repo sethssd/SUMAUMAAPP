@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/destaque_model.dart';
 import '../models/plant_model.dart';
 import '../widgets/home/category_chip_bar.dart';
 import '../widgets/home/destaque_carousel.dart';
 import '../widgets/home/plant_card.dart';
+import '../widgets/home/popular_plants_row.dart';
 import '../widgets/home/recentes_carousel.dart';
 import '../widgets/plant_search_delegate.dart';
 import '../widgets/side_menu.dart';
@@ -14,6 +16,7 @@ import '../utils/app_theme.dart';
 
 const int _kPageSize = 20;
 const int _kRecentesLimit = 10;
+const int _kPopularLimit = 8;
 
 // Categorias exibidas nos chips. Pode ser ampliada sem alterar a lógica.
 const List<String> _kCategories = [
@@ -51,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Estado: carrosséis ────────────────────────────────────
   List<DestaqueModel> _destaques = [];
   List<PlantModel> _recentes = [];
+  List<PlantModel> _populares = [];
   bool _carouselLoaded = false;
 
   @override
@@ -76,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ── Fetch destaques + recentes (paralelo) ─────────────────
+  // ── Fetch destaques + recentes + populares (paralelo) ─────
 
   Future<void> _fetchCarousels() async {
     try {
@@ -91,10 +95,18 @@ class _HomeScreenState extends State<HomeScreen> {
             .orderBy('dataCriacao', descending: true)
             .limit(_kRecentesLimit)
             .get(),
+        // "Popular" — por enquanto usa as mesmas plantas que recentes,
+        // mas poderia ter um campo popularidade ou contagem de views.
+        FirebaseFirestore.instance
+            .collection('plantas')
+            .where('excluida', isNotEqualTo: true)
+            .limit(_kPopularLimit)
+            .get(),
       ]);
 
       final destaquesDocs = results[0].docs;
       final recentesDocs = results[1].docs;
+      final popularesDocs = results[2].docs;
 
       if (!mounted) return;
       setState(() {
@@ -102,6 +114,13 @@ class _HomeScreenState extends State<HomeScreen> {
             .map((d) => DestaqueModel.fromSnapshot(d))
             .toList();
         _recentes = recentesDocs
+            .where((d) {
+              final data = d.data() as Map<String, dynamic>?;
+              return data != null && data['excluida'] != true;
+            })
+            .map((d) => PlantModel.fromSnapshot(d))
+            .toList();
+        _populares = popularesDocs
             .where((d) {
               final data = d.data() as Map<String, dynamic>?;
               return data != null && data['excluida'] != true;
@@ -181,34 +200,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sumaúma'),
-        leading: Builder(builder: (ctx) {
-          return GestureDetector(
-            onTap: () => Scaffold.of(ctx).openDrawer(),
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Image.asset(
-                isDark ? 'icons/ico-branco.png' : 'icons/ico-verde.png',
-                fit: BoxFit.contain,
-              ),
-            ),
-          );
-        }),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            tooltip: 'Buscar',
-            onPressed: () =>
-                showSearch(context: context, delegate: PlantSearchDelegate()),
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        drawer: const SideMenu(),
+        body: _isInitialLoading && !_carouselLoaded
+            ? Container(
+                color: isDark ? SumaColors.darkBg : SumaColors.greenDeep,
+                child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+              )
+            : _buildBody(isDark),
       ),
-      drawer: const SideMenu(),
-      body: _isInitialLoading && !_carouselLoaded
-          ? const Center(child: CircularProgressIndicator())
-          : _buildBody(isDark),
     );
   }
 
@@ -224,10 +226,37 @@ class _HomeScreenState extends State<HomeScreen> {
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
-        // ── Espaço inicial ─────────────────────────────────
-        const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        // ── Topo Verde Imersivo ────────────────────────────────
+        _buildGreenHeader(isDark),
 
-        // ── Carrossel Destaques ────────────────────────────
+        // ── Seção "Popular" (dentro do topo verde) ────────────
+        if (_populares.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Container(
+              color: isDark ? SumaColors.darkBg : SumaColors.greenDeep,
+              child: Column(
+                children: [
+                  PopularPlantsRow(plantas: _populares),
+                  const SizedBox(height: 20),
+                  // Curva inferior para transição suave
+                  Container(
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? SumaColors.darkBg
+                          : Theme.of(context).scaffoldBackgroundColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(28),
+                        topRight: Radius.circular(28),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        // ── Carrossel Destaques ────────────────────────────────
         if (_destaques.isNotEmpty)
           SliverToBoxAdapter(
             child: Padding(
@@ -236,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-        // ── Carrossel Adicionados Recentemente ─────────────
+        // ── Carrossel Adicionados Recentemente ─────────────────
         if (_recentes.isNotEmpty)
           SliverToBoxAdapter(
             child: Padding(
@@ -245,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-        // ── Cabeçalho "Todas as Plantas" ───────────────────
+        // ── Cabeçalho "Todas as Plantas" ───────────────────────
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -275,7 +304,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // ── Chips de categoria ─────────────────────────────
+        // ── Chips de categoria ─────────────────────────────────
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 16),
@@ -287,7 +316,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // ── Lista de plantas ───────────────────────────────
+        // ── Lista de plantas ───────────────────────────────────
         _isInitialLoading
             ? const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator()),
@@ -344,9 +373,133 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
 
-        // ── Padding final ─────────────────────────────────
+        // ── Padding final ─────────────────────────────────────
         const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ],
+    );
+  }
+
+  // ── Topo verde com menu, avatar, search e Popular ──────────
+
+  SliverToBoxAdapter _buildGreenHeader(bool isDark) {
+    return SliverToBoxAdapter(
+      child: Container(
+        color: isDark ? SumaColors.darkBg : SumaColors.greenDeep,
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              children: [
+                // ── Linha 1: menu hambúrguer + avatar ────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Botão de menu
+                    Builder(builder: (ctx) {
+                      return GestureDetector(
+                        onTap: () => Scaffold.of(ctx).openDrawer(),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(
+                            Icons.menu_rounded,
+                            color: Colors.white.withValues(alpha: 0.9),
+                            size: 28,
+                          ),
+                        ),
+                      );
+                    }),
+
+                    // Avatar do usuário
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.15),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // ── Linha 2: Barra de busca ────────────────────────
+                Row(
+                  children: [
+                    // Campo de busca
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => showSearch(
+                          context: context,
+                          delegate: PlantSearchDelegate(),
+                        ),
+                        child: Container(
+                          height: 46,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(25),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.search_rounded,
+                                color: Colors.white.withValues(alpha: 0.7),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'Pesquise aqui',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.6),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    // Botão de filtro
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: SumaColors.greenBright,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.tune_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
