@@ -115,7 +115,7 @@ class _DetailScreenState extends State<DetailScreen>
             child: CustomScrollView(slivers: [
               SliverAppBar(
                 expandedHeight: 380,
-                pinned: false,
+                pinned: true,
                 backgroundColor: Colors.transparent,
                 automaticallyImplyLeading: false,
                 elevation: 0,

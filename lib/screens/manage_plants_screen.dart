@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 import '../utils/app_constants.dart';
+import 'edit_plant_screen.dart';
 
 // Tela para gerenciar plantas. A capacidade de deletar plantas é
 // condicionada ao cargo do usuário: 'super_admin' pode apagar tudo,
@@ -69,9 +70,10 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
     }
   }
 
-  // Abre o formulário web de planta no navegador do dispositivo.
-  // Se [plantaId] for null abre em modo "Adicionar"; caso contrário, "Editar".
-  Future<void> _openWebForm(
+  // Abre o formulário web de planta no navegador do dispositivo. (LEGADO)
+  // Mantido caso seja necessário reverter ou usar como fallback.
+  // ignore: unused_element
+  Future<void> _abrirFormularioWebLegado(
     BuildContext context, {
     required String? plantaId,
   }) async {
@@ -89,6 +91,15 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
     }
   }
 
+  void _navigateToEditScreen(BuildContext context, {String? plantaId}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditPlantScreen(plantaId: plantaId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 1. PEGAMOS O ID DO USUÁRIO ATUAL LOGADO
@@ -99,7 +110,7 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
       floatingActionButton: FloatingActionButton(
         tooltip: 'Adicionar nova planta',
         child: const Icon(Icons.add),
-        onPressed: () => _openWebForm(context, plantaId: null),
+        onPressed: () => _navigateToEditScreen(context, plantaId: null),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -166,8 +177,8 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
                 subtitle: Text(data[AppConstants.fieldNomeCientifico] ?? ''),
                 trailing: IconButton(
                   icon: const Icon(Icons.edit),
-                  tooltip: 'Editar no navegador',
-                  onPressed: () => _openWebForm(context, plantaId: planta.id),
+                  tooltip: 'Editar Planta',
+                  onPressed: () => _navigateToEditScreen(context, plantaId: planta.id),
                 ),
               );
 

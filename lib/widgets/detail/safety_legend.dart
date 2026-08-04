@@ -32,29 +32,36 @@ extension NivelSegurancaExtension on NivelSeguranca {
 }
 
 class SafetyLegend extends StatelessWidget {
-  const SafetyLegend({super.key});
+  final bool isDark;
+  const SafetyLegend({super.key, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF141A14) : Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: isDark ? Border.all(color: Colors.amber.withValues(alpha: 0.05)) : null,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Legenda de Segurança',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(
+              fontWeight: FontWeight.bold, 
+              fontSize: 16,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -75,7 +82,10 @@ class SafetyLegend extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     nivel.rotulo,
-                    style: const TextStyle(fontSize: 12),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
                   ),
                 ],
               );

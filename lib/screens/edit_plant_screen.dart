@@ -7,6 +7,25 @@ import 'package:file_picker/file_picker.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
 import '../env.dart';
 
+class CuidadoForm {
+  String nivel = 'avisoGeral';
+  final TextEditingController descricaoCtrl = TextEditingController();
+  final TextEditingController doseCtrl = TextEditingController();
+}
+
+class ReviewForm {
+  final TextEditingController autorCtrl = TextEditingController();
+  final TextEditingController textoCtrl = TextEditingController();
+  final TextEditingController notaCtrl = TextEditingController();
+}
+
+class LocalForm {
+  final TextEditingController nomeCtrl = TextEditingController();
+  final TextEditingController enderecoCtrl = TextEditingController();
+  final TextEditingController avaliacaoCtrl = TextEditingController();
+  final List<ReviewForm> reviews = [];
+}
+
 class EditPlantScreen extends StatefulWidget {
   final String? plantaId;
   const EditPlantScreen({super.key, this.plantaId});
@@ -34,14 +53,8 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
   final _categoriaController = TextEditingController();
   final _audioDescricaoUrlController = TextEditingController();
   
-  // MVP: campos simples para o 1º item de cuidados avançados e locais
-  String _cuidadoNivel = 'avisoGeral';
-  final _cuidadoDescricaoController = TextEditingController();
-  final _cuidadoDoseController = TextEditingController();
-  
-  final _localNomeController = TextEditingController();
-  final _localEnderecoController = TextEditingController();
-  final _localAvaliacaoController = TextEditingController();
+  final List<CuidadoForm> _cuidadosForm = [];
+  final List<LocalForm> _locaisForm = [];
 
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
@@ -66,6 +79,42 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       _isEditing = true;
       _loadPlantaData();
     }
+  }
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _nomeCientificoController.dispose();
+    _descricaoCurtaController.dispose();
+    _imagemUrlController.dispose();
+    _modelo3dUrlController.dispose();
+    _audioUrlController.dispose();
+    _taxonomiaController.dispose();
+    _descricaoController.dispose();
+    _distribuicaoHabitatController.dispose();
+    _fenologiaController.dispose();
+    _usosValorEconomicoController.dispose();
+    _farmacologiaController.dispose();
+    _referenciasFarmacologicasController.dispose();
+    _referenciaGeralController.dispose();
+    _keywordsController.dispose();
+    _categoriaController.dispose();
+    _audioDescricaoUrlController.dispose();
+    for (var c in _cuidadosForm) {
+      c.descricaoCtrl.dispose();
+      c.doseCtrl.dispose();
+    }
+    for (var l in _locaisForm) {
+      l.nomeCtrl.dispose();
+      l.enderecoCtrl.dispose();
+      l.avaliacaoCtrl.dispose();
+      for (var r in l.reviews) {
+        r.autorCtrl.dispose();
+        r.textoCtrl.dispose();
+        r.notaCtrl.dispose();
+      }
+    }
+    super.dispose();
   }
 
   String _parseListFieldToString(dynamic data) {
@@ -113,17 +162,32 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
         _audioDescricaoUrlController.text = data['audioDescricaoUrl'] ?? '';
 
         if (data['cuidadosAvancados'] != null && (data['cuidadosAvancados'] as List).isNotEmpty) {
-          final firstCuidado = data['cuidadosAvancados'][0];
-          _cuidadoNivel = firstCuidado['nivel'] ?? 'avisoGeral';
-          _cuidadoDescricaoController.text = firstCuidado['descricao'] ?? '';
-          _cuidadoDoseController.text = firstCuidado['doseRecomendada'] ?? '';
+          for (var c in data['cuidadosAvancados']) {
+            final form = CuidadoForm();
+            form.nivel = c['nivel'] ?? 'avisoGeral';
+            form.descricaoCtrl.text = c['descricao'] ?? '';
+            form.doseCtrl.text = c['doseRecomendada'] ?? '';
+            _cuidadosForm.add(form);
+          }
         }
 
         if (data['locais'] != null && (data['locais'] as List).isNotEmpty) {
-          final firstLocal = data['locais'][0];
-          _localNomeController.text = firstLocal['nomeLocal'] ?? '';
-          _localEnderecoController.text = firstLocal['endereco'] ?? '';
-          _localAvaliacaoController.text = (firstLocal['avaliacaoMedia'] ?? '').toString();
+          for (var l in data['locais']) {
+            final form = LocalForm();
+            form.nomeCtrl.text = l['nomeLocal'] ?? '';
+            form.enderecoCtrl.text = l['endereco'] ?? '';
+            form.avaliacaoCtrl.text = (l['avaliacaoMedia'] ?? '').toString();
+            if (l['reviews'] != null) {
+              for (var r in l['reviews']) {
+                final revForm = ReviewForm();
+                revForm.autorCtrl.text = r['autor'] ?? '';
+                revForm.textoCtrl.text = r['texto'] ?? '';
+                revForm.notaCtrl.text = (r['nota'] ?? '').toString();
+                form.reviews.add(revForm);
+              }
+            }
+            _locaisForm.add(form);
+          }
         }
       }
     } catch (e) {
@@ -304,17 +368,21 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       'keywords': keywords,
       'categoria': _categoriaController.text,
       'audioDescricaoUrl': _audioDescricaoUrlController.text,
-      'cuidadosAvancados': _cuidadoDescricaoController.text.isNotEmpty ? [{
-        'nivel': _cuidadoNivel,
-        'descricao': _cuidadoDescricaoController.text,
-        'doseRecomendada': _cuidadoDoseController.text,
-      }] : [],
-      'locais': _localNomeController.text.isNotEmpty ? [{
-        'nomeLocal': _localNomeController.text,
-        'endereco': _localEnderecoController.text,
-        'avaliacaoMedia': double.tryParse(_localAvaliacaoController.text) ?? 0.0,
-        'reviews': [],
-      }] : [],
+      'cuidadosAvancados': _cuidadosForm.map((c) => {
+        'nivel': c.nivel,
+        'descricao': c.descricaoCtrl.text.trim(),
+        'doseRecomendada': c.doseCtrl.text.trim(),
+      }).toList(),
+      'locais': _locaisForm.map((l) => {
+        'nomeLocal': l.nomeCtrl.text.trim(),
+        'endereco': l.enderecoCtrl.text.trim(),
+        'avaliacaoMedia': double.tryParse(l.avaliacaoCtrl.text.trim()) ?? 0.0,
+        'reviews': l.reviews.map((r) => {
+          'autor': r.autorCtrl.text.trim(),
+          'texto': r.textoCtrl.text.trim(),
+          'nota': double.tryParse(r.notaCtrl.text.trim()) ?? 0.0,
+        }).toList(),
+      }).toList(),
     };
 
     try {
@@ -482,43 +550,9 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                     ),
 
                     const Divider(height: 30),
-                    const Text('Cuidados e Segurança (MVP 1 item)', style: TextStyle(fontWeight: FontWeight.bold)),
-                    DropdownButtonFormField<String>(
-                      initialValue: _cuidadoNivel,
-                      decoration: const InputDecoration(labelText: 'Nível de Segurança'),
-                      items: const [
-                        DropdownMenuItem(value: 'avisoGeral', child: Text('Aviso Geral (Azul)')),
-                        DropdownMenuItem(value: 'cuidadoSeguro', child: Text('Cuidado Seguro (Verde)')),
-                        DropdownMenuItem(value: 'atencao', child: Text('Atenção (Laranja)')),
-                        DropdownMenuItem(value: 'cuidadoPerigo', child: Text('Perigo (Vermelho)')),
-                      ],
-                      onChanged: (v) => setState(() => _cuidadoNivel = v ?? 'avisoGeral'),
-                    ),
-                    TextFormField(
-                      controller: _cuidadoDescricaoController,
-                      decoration: const InputDecoration(labelText: 'Descrição do Cuidado'),
-                    ),
-                    TextFormField(
-                      controller: _cuidadoDoseController,
-                      decoration: const InputDecoration(labelText: 'A Dose Certa (Opcional)'),
-                    ),
-
+                    _buildCuidadosAvancadosList(),
                     const Divider(height: 30),
-                    const Text('Onde Encontrar (MVP 1 local)', style: TextStyle(fontWeight: FontWeight.bold)),
-                    TextFormField(
-                      controller: _localNomeController,
-                      decoration: const InputDecoration(labelText: 'Nome do Local'),
-                    ),
-                    TextFormField(
-                      controller: _localEnderecoController,
-                      decoration: const InputDecoration(labelText: 'Endereço'),
-                    ),
-                    TextFormField(
-                      controller: _localAvaliacaoController,
-                      decoration: const InputDecoration(labelText: 'Avaliação Média (ex: 4.5)'),
-                      keyboardType: TextInputType.number,
-                    ),
-
+                    _buildLocaisList(),
                     const Divider(height: 30),
 
                     // ... (resto dos campos de texto)
@@ -580,6 +614,182 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  Widget _buildCuidadosAvancadosList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Cuidados Avançados', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            TextButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Adicionar'),
+              onPressed: () => setState(() => _cuidadosForm.add(CuidadoForm())),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ..._cuidadosForm.asMap().entries.map((entry) {
+          final index = entry.key;
+          final form = entry.value;
+          return Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Cuidado #${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => setState(() => _cuidadosForm.removeAt(index)),
+                      ),
+                    ],
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: form.nivel,
+                    decoration: const InputDecoration(labelText: 'Nível de Segurança'),
+                    items: const [
+                      DropdownMenuItem(value: 'avisoGeral', child: Text('Aviso Geral (Azul)')),
+                      DropdownMenuItem(value: 'cuidadoSeguro', child: Text('Cuidado Seguro (Verde)')),
+                      DropdownMenuItem(value: 'atencao', child: Text('Atenção (Laranja)')),
+                      DropdownMenuItem(value: 'cuidadoPerigo', child: Text('Perigo (Vermelho)')),
+                    ],
+                    onChanged: (v) => setState(() => form.nivel = v ?? 'avisoGeral'),
+                  ),
+                  TextFormField(
+                    controller: form.descricaoCtrl,
+                    decoration: const InputDecoration(labelText: 'Descrição do Cuidado'),
+                    validator: (value) => (value == null || value.trim().isEmpty) ? 'Informe a descrição ou remova este item' : null,
+                  ),
+                  TextFormField(
+                    controller: form.doseCtrl,
+                    decoration: const InputDecoration(labelText: 'A Dose Certa (Opcional)'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildLocaisList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Locais (Onde Encontrar)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            TextButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Adicionar Local'),
+              onPressed: () => setState(() => _locaisForm.add(LocalForm())),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ..._locaisForm.asMap().entries.map((entry) {
+          final index = entry.key;
+          final form = entry.value;
+          return Card(
+            margin: const EdgeInsets.only(bottom: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Local #${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => setState(() => _locaisForm.removeAt(index)),
+                      ),
+                    ],
+                  ),
+                  TextFormField(
+                    controller: form.nomeCtrl,
+                    decoration: const InputDecoration(labelText: 'Nome do Local'),
+                    validator: (value) => (value == null || value.trim().isEmpty) ? 'Informe o nome do local ou remova-o' : null,
+                  ),
+                  TextFormField(
+                    controller: form.enderecoCtrl,
+                    decoration: const InputDecoration(labelText: 'Endereço'),
+                    validator: (value) => (value == null || value.trim().isEmpty) ? 'Informe o endereço' : null,
+                  ),
+                  TextFormField(
+                    controller: form.avaliacaoCtrl,
+                    decoration: const InputDecoration(labelText: 'Avaliação Média (ex: 4.5)'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Avaliações (Reviews):', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ...form.reviews.asMap().entries.map((revEntry) {
+                    final revIndex = revEntry.key;
+                    final revForm = revEntry.value;
+                    return Container(
+                      margin: const EdgeInsets.only(top: 8, bottom: 8, left: 16),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Review #${revIndex + 1}', style: const TextStyle(fontSize: 12)),
+                              IconButton(
+                                icon: const Icon(Icons.close, size: 18),
+                                onPressed: () => setState(() => form.reviews.removeAt(revIndex)),
+                              ),
+                            ],
+                          ),
+                          TextFormField(
+                            controller: revForm.autorCtrl,
+                            decoration: const InputDecoration(labelText: 'Autor'),
+                            validator: (value) => (value == null || value.trim().isEmpty) ? 'Obrigatório' : null,
+                          ),
+                          TextFormField(
+                            controller: revForm.textoCtrl,
+                            decoration: const InputDecoration(labelText: 'Texto'),
+                            maxLines: 2,
+                            validator: (value) => (value == null || value.trim().isEmpty) ? 'Obrigatório' : null,
+                          ),
+                          TextFormField(
+                            controller: revForm.notaCtrl,
+                            decoration: const InputDecoration(labelText: 'Nota (0 a 5)'),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  TextButton.icon(
+                    icon: const Icon(Icons.add_comment, size: 16),
+                    label: const Text('Adicionar Avaliação'),
+                    onPressed: () => setState(() => form.reviews.add(ReviewForm())),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 }

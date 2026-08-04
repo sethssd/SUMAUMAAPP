@@ -152,7 +152,7 @@ class GeralTab extends StatelessWidget {
       const SizedBox(height: 16),
       
       if (cuidadosAvancados != null && cuidadosAvancados.isNotEmpty) ...[
-        const SafetyLegend(),
+        SafetyLegend(isDark: isDark),
         const SizedBox(height: 16),
         ...cuidadosAvancados.map((c) => CuidadoAvancadoCard(cuidado: c)),
       ],
