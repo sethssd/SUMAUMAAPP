@@ -1,82 +1,72 @@
 import 'package:flutter/material.dart';
 import '../../models/plant_model.dart';
 import '../../screens/detail_screen.dart';
+import '../../utils/app_theme.dart';
 
-/// Linha horizontal "Popular" — avatares circulares com nome abaixo.
-/// Exibida no topo verde da Home, logo após a barra de busca.
+/// Card "Popular" — retângulo branco elevado exibindo as plantas populares
+/// com miniaturas de cantos arredondados e nome centralizado abaixo.
 class PopularPlantsRow extends StatelessWidget {
   final List<PlantModel> plantas;
-  final VoidCallback? onShowAll;
 
   const PopularPlantsRow({
     super.key,
     required this.plantas,
-    this.onShowAll,
   });
 
   @override
   Widget build(BuildContext context) {
     if (plantas.isEmpty) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Título + "Mostrar Tudo"
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: [
-              const Text(
-                'Popular',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
-              const Spacer(),
-              if (onShowAll != null)
-                GestureDetector(
-                  onTap: onShowAll,
-                  child: Text(
-                    'Mostrar\nTudo',
-                    textAlign: TextAlign.right,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.8),
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.white.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ),
-            ],
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: isDark ? SumaColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
-        ),
-        const SizedBox(height: 12),
-
-        // Avatares
-        SizedBox(
-          height: 90,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: plantas.length,
-            itemBuilder: (context, index) {
-              final plant = plantas[index];
-              return _PopularAvatar(plant: plant);
-            },
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Popular',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 92,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: plantas.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final plant = plantas[index];
+                return _PopularAvatar(plant: plant, isDark: isDark);
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _PopularAvatar extends StatelessWidget {
   final PlantModel plant;
+  final bool isDark;
 
-  const _PopularAvatar({required this.plant});
+  const _PopularAvatar({required this.plant, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -85,26 +75,26 @@ class _PopularAvatar extends StatelessWidget {
         context,
         MaterialPageRoute(builder: (_) => DetailScreen(plantaId: plant.id)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: SizedBox(
+        width: 64,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Avatar circular
             Container(
-              width: 56,
-              height: 56,
+              width: 58,
+              height: 58,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2.5),
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 6,
+                    color: Colors.black.withValues(alpha: 0.12),
+                    blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: ClipOval(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
                 child: plant.imagemUrl.isNotEmpty
                     ? Image.network(
                         plant.imagemUrl,
@@ -120,20 +110,20 @@ class _PopularAvatar extends StatelessWidget {
                       ),
               ),
             ),
-            const SizedBox(height: 6),
-
-            // Nome
-            SizedBox(
-              width: 64,
+            const SizedBox(height: 5),
+            Flexible(
               child: Text(
                 plant.nome,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.9),
+                  fontSize: 10.5,
+                  height: 1.15,
+                  fontWeight: FontWeight.w700,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.9)
+                      : const Color(0xFF1A1A2E),
                 ),
               ),
             ),

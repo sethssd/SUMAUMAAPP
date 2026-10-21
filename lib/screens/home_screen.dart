@@ -3,22 +3,23 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/destaque_model.dart';
 import '../models/plant_model.dart';
+import '../screens/detail_screen.dart';
 import '../widgets/home/category_chip_bar.dart';
 import '../widgets/home/destaque_carousel.dart';
+import '../widgets/home/noticias_tab_view.dart';
 import '../widgets/home/plant_card.dart';
 import '../widgets/home/popular_plants_row.dart';
 import '../widgets/home/recentes_carousel.dart';
-import '../widgets/plant_search_delegate.dart';
+import '../widgets/home/todas_plantas_hub_card.dart';
 import '../widgets/side_menu.dart';
 import '../utils/app_theme.dart';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
 const int _kPageSize = 20;
+const int _kPopularLimit = 6;
 const int _kRecentesLimit = 10;
-const int _kPopularLimit = 8;
 
-// Categorias exibidas nos chips. Pode ser ampliada sem alterar a lógica.
 const List<String> _kCategories = [
   'Medicinais',
   'Frutíferas',
@@ -40,102 +41,171 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // ── Estado: paginação de plantas ──────────────────────────
+  // ── Estado: navegação entre Home (0), Notícias (1) e Todas as Plantas (2) ──
+  int _currentNavIndex = 0;
+  late final PageController _tabPageController;
+
+  // ── Estado: pesquisa inline (funciona na própria tela sem abrir outra rota) ──
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  String _searchQuery = '';
+
+  // ── Estado: paginação de plantas (aba "Todas as Plantas") ──────────────────
   bool _isInitialLoading = true;
   bool _isLoadingMore = false;
   bool _hasMore = true;
   final List<DocumentSnapshot> _plantaDocs = [];
   DocumentSnapshot? _lastDoc;
-  final ScrollController _scrollController = ScrollController();
+  final ScrollController _catalogScrollController = ScrollController();
 
-  // ── Estado: categoria selecionada ─────────────────────────
+  // ── Estado: categoria selecionada no catálogo ──────────────────────────────
   String? _selectedCategory;
 
-  // ── Estado: carrosséis ────────────────────────────────────
+  // ── Estado: seções do Hub Inicial ──────────────────────────────────────────
   List<DestaqueModel> _destaques = [];
+  List<PlantModel> _allHubPlants = [];
   List<PlantModel> _recentes = [];
   List<PlantModel> _populares = [];
-  bool _carouselLoaded = false;
+  List<PlantModel> _todasPreview = [];
+  bool _hubLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchCarousels();
+    _tabPageController = PageController(initialPage: _currentNavIndex);
+    _fetchHubData();
     _fetchPlantas(reset: true);
-    _scrollController.addListener(_onScroll);
+    _catalogScrollController.addListener(_onCatalogScroll);
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _tabPageController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    _catalogScrollController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300) {
+  void _onCatalogScroll() {
+    if (_catalogScrollController.position.pixels >=
+        _catalogScrollController.position.maxScrollExtent - 300) {
       if (!_isLoadingMore && _hasMore) {
         _fetchPlantas();
       }
     }
   }
 
-  // ── Fetch destaques + recentes + populares (paralelo) ─────
-
-  Future<void> _fetchCarousels() async {
-    try {
-      final results = await Future.wait([
-        FirebaseFirestore.instance
-            .collection('destaques')
-            .orderBy('ordem')
-            .get(),
-        FirebaseFirestore.instance
-            .collection('plantas')
-            .where('excluida', isNotEqualTo: true)
-            .orderBy('dataCriacao', descending: true)
-            .limit(_kRecentesLimit)
-            .get(),
-        // "Popular" — por enquanto usa as mesmas plantas que recentes,
-        // mas poderia ter um campo popularidade ou contagem de views.
-        FirebaseFirestore.instance
-            .collection('plantas')
-            .where('excluida', isNotEqualTo: true)
-            .limit(_kPopularLimit)
-            .get(),
-      ]);
-
-      final destaquesDocs = results[0].docs;
-      final recentesDocs = results[1].docs;
-      final popularesDocs = results[2].docs;
-
-      if (!mounted) return;
-      setState(() {
-        _destaques = destaquesDocs
-            .map((d) => DestaqueModel.fromSnapshot(d))
-            .toList();
-        _recentes = recentesDocs
-            .where((d) {
-              final data = d.data() as Map<String, dynamic>?;
-              return data != null && data['excluida'] != true;
-            })
-            .map((d) => PlantModel.fromSnapshot(d))
-            .toList();
-        _populares = popularesDocs
-            .where((d) {
-              final data = d.data() as Map<String, dynamic>?;
-              return data != null && data['excluida'] != true;
-            })
-            .map((d) => PlantModel.fromSnapshot(d))
-            .toList();
-        _carouselLoaded = true;
-      });
-    } catch (e) {
-      debugPrint('Erro ao carregar carrosséis: $e');
-      if (mounted) setState(() => _carouselLoaded = true);
+  void _switchTab(int index) {
+    if (_currentNavIndex == index) return;
+    _searchFocusNode.unfocus();
+    setState(() => _currentNavIndex = index);
+    if (_tabPageController.hasClients) {
+      _tabPageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 360),
+        curve: Curves.easeOutCubic,
+      );
     }
   }
 
-  // ── Fetch paginado de plantas com filtro de categoria ──────
+  // ── Fetch dos dados do Hub Inicial ─────────────────────────────────────────
+
+  Future<void> _fetchHubData() async {
+    List<DestaqueModel> loadedDestaques = [];
+    List<PlantModel> allPlants = [];
+
+    // 1. Busca de Destaques isolada para nunca bloquear o carregamento das plantas
+    try {
+      final destaquesSnap =
+          await FirebaseFirestore.instance.collection('destaques').get();
+      loadedDestaques = destaquesSnap.docs
+          .map((d) => DestaqueModel.fromSnapshot(d))
+          .toList()
+        ..sort((a, b) {
+          final orderCmp = a.ordem.compareTo(b.ordem);
+          if (orderCmp != 0) return orderCmp;
+          final dateA =
+              a.dataPublicacao ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final dateB =
+              b.dataPublicacao ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return dateB.compareTo(dateA);
+        });
+    } catch (e) {
+      debugPrint('Aviso ao carregar destaques: $e');
+    }
+
+    // 2. Busca de Plantas (filtra excluida/isDeleted em memória para incluir
+    // documentos antigos que não possuem o campo booleano no Firestore)
+    try {
+      final plantasSnap = await FirebaseFirestore.instance
+          .collection('plantas')
+          .limit(80)
+          .get();
+
+      allPlants = plantasSnap.docs
+          .where((d) {
+            final data = d.data() as Map<String, dynamic>?;
+            return data != null &&
+                data['excluida'] != true &&
+                data['isDeleted'] != true;
+          })
+          .map((d) => PlantModel.fromSnapshot(d))
+          .toList();
+    } catch (e) {
+      debugPrint('Erro ao carregar plantas do Hub: $e');
+    }
+
+    // Populares: prioriza plantas marcadas com isPopular == true e completa até o limite
+    final flaggedPopular = allPlants.where((p) => p.isPopular).toList();
+    final unflaggedPopular = allPlants.where((p) => !p.isPopular).toList();
+    final popularesList = [
+      ...flaggedPopular,
+      ...unflaggedPopular,
+    ].take(_kPopularLimit).toList();
+
+    // Adicionados: prioriza todas as plantas adicionadas até 3 dias atrás (máx 10).
+    // Se houver menos de 10 adicionadas nos últimos 3 dias, preenche com as mais
+    // recentes gerais para manter sempre 10 plantas na amostragem do Hub.
+    final now = DateTime.now();
+    final sortedByDate = List<PlantModel>.from(allPlants)
+      ..sort((a, b) {
+        final dateA =
+            a.dataCriacao ?? a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final dateB =
+            b.dataCriacao ?? b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return dateB.compareTo(dateA);
+      });
+
+    final addedLast3Days = <PlantModel>[];
+    final olderPlants = <PlantModel>[];
+
+    for (final plant in sortedByDate) {
+      final refDate = plant.dataCriacao ?? plant.updatedAt;
+      if (refDate != null && now.difference(refDate).inDays <= 3) {
+        addedLast3Days.add(plant);
+      } else {
+        olderPlants.add(plant);
+      }
+    }
+
+    final recentesList = <PlantModel>[
+      ...addedLast3Days,
+      ...olderPlants,
+    ].take(_kRecentesLimit).toList();
+
+    if (!mounted) return;
+    setState(() {
+      _destaques = loadedDestaques;
+      _allHubPlants = allPlants;
+      _populares = popularesList;
+      _todasPreview = allPlants.take(3).toList();
+      _recentes = recentesList;
+      _hubLoaded = true;
+    });
+  }
+
+  // ── Fetch paginado de plantas para a aba "Todas as Plantas" ────────────────
 
   Future<void> _fetchPlantas({bool reset = false}) async {
     if (_isLoadingMore) return;
@@ -154,13 +224,11 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       Query query = FirebaseFirestore.instance
           .collection('plantas')
-          .where('excluida', isNotEqualTo: true)
           .limit(_kPageSize);
 
       if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
         query = FirebaseFirestore.instance
             .collection('plantas')
-            .where('excluida', isNotEqualTo: true)
             .where('categoria', isEqualTo: _selectedCategory)
             .limit(_kPageSize);
       }
@@ -174,7 +242,13 @@ class _HomeScreenState extends State<HomeScreen> {
       if (snapshot.docs.length < _kPageSize) _hasMore = false;
       if (snapshot.docs.isNotEmpty) {
         _lastDoc = snapshot.docs.last;
-        _plantaDocs.addAll(snapshot.docs);
+        final validDocs = snapshot.docs.where((d) {
+          final data = d.data() as Map<String, dynamic>?;
+          return data != null &&
+              data['excluida'] != true &&
+              data['isDeleted'] != true;
+        });
+        _plantaDocs.addAll(validDocs);
       }
     } catch (e) {
       debugPrint('Erro ao carregar plantas: $e');
@@ -194,28 +268,445 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchPlantas(reset: true);
   }
 
-  // ── Build ──────────────────────────────────────────────────
+  // ── Filtro inline de busca ─────────────────────────────────────────────────
+
+  bool _matchesSearch(PlantModel plant, String query) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    if (plant.nome.toLowerCase().contains(q)) return true;
+    if (plant.nomeCientifico.toLowerCase().contains(q)) return true;
+    if (plant.categoria.toLowerCase().contains(q)) return true;
+    if (plant.resumoLimpo.toLowerCase().contains(q)) return true;
+    if (plant.keywords.any((k) => k.toLowerCase().contains(q))) return true;
+    if (plant.aspectosUso.any((a) => a.toLowerCase().contains(q))) return true;
+    return false;
+  }
+
+  // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
+        backgroundColor: isDark ? SumaColors.darkBg : Colors.white,
         drawer: const SideMenu(),
-        body: _isInitialLoading && !_carouselLoaded
-            ? Container(
-                color: isDark ? SumaColors.darkBg : SumaColors.greenDeep,
-                child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+        body: !_hubLoaded && _isInitialLoading
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: isDark ? SumaColors.greenSage : const Color(0xFF007A1E),
+                ),
               )
-            : _buildBody(isDark),
+            : SafeArea(
+                bottom: false,
+                child: Stack(
+                  children: [
+                    // Conteúdo principal se estende até o fundo da tela por trás da curva da barra inferior
+                    Column(
+                      children: [
+                        _buildTopHeader(isDark),
+                        Expanded(
+                          child: PageView(
+                            controller: _tabPageController,
+                            onPageChanged: (index) {
+                              if (_currentNavIndex != index) {
+                                _searchFocusNode.unfocus();
+                                setState(() => _currentNavIndex = index);
+                              }
+                            },
+                            children: [
+                              _buildHubTab(isDark),
+                              NoticiasTabView(
+                                destaques: _destaques,
+                                onRefresh: _fetchHubData,
+                              ),
+                              _buildAllPlantsCatalogTab(isDark),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // Barra inferior flutuante com onda suave (sem cantos brancos cortando o scroll)
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      child: _buildBottomNavBar(isDark),
+                    ),
+                  ],
+                ),
+              ),
       ),
     );
   }
 
-  Widget _buildBody(bool isDark) {
-    final plantas = _plantaDocs.map((doc) {
+  // ── Cabeçalho superior com menu hambúrguer, avatar e pesquisa inline ───────
+
+  Widget _buildTopHeader(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Column(
+        children: [
+          // Linha 1: menu hambúrguer + avatar circular
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Builder(builder: (ctx) {
+                return GestureDetector(
+                  onTap: () => Scaffold.of(ctx).openDrawer(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Icon(
+                      Icons.menu_rounded,
+                      color: isDark ? Colors.white : Colors.black,
+                      size: 32,
+                    ),
+                  ),
+                );
+              }),
+              GestureDetector(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Use o menu lateral para gerenciar sua conta.'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? Colors.white : Colors.black,
+                      width: 3,
+                    ),
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark ? Colors.white24 : Colors.black,
+                      ),
+                      child: const Icon(
+                        Icons.person_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Linha 2: Barra de busca inline (funciona direto na tela) + botão de filtro
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 46,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF005B13),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.search_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          focusNode: _searchFocusNode,
+                          onChanged: (value) {
+                            setState(() => _searchQuery = value);
+                          },
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          cursorColor: Colors.white,
+                          decoration: InputDecoration(
+                            hintText: 'Pesquise aqui',
+                            hintStyle: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            filled: false,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                      if (_searchQuery.isNotEmpty)
+                        GestureDetector(
+                          onTap: () {
+                            _searchController.clear();
+                            _searchFocusNode.unfocus();
+                            setState(() => _searchQuery = '');
+                          },
+                          child: const Padding(
+                            padding: EdgeInsets.only(left: 6),
+                            child: Icon(
+                              Icons.close_rounded,
+                              color: Colors.white70,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Botão de filtro (reservado para a próxima conversa)
+              Container(
+                width: 50,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF007A1E),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.tune_rounded,
+                  color: Colors.white,
+                  size: 26,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Aba 0: Hub Inicial (Home) ──────────────────────────────────────────────
+
+  Widget _buildHubTab(bool isDark) {
+    final query = _searchQuery.trim();
+    final searchResults = query.isEmpty
+        ? const <PlantModel>[]
+        : _allHubPlants.where((p) => _matchesSearch(p, query)).toList();
+
+    return RefreshIndicator(
+      onRefresh: _fetchHubData,
+      child: ListView(
+        padding: const EdgeInsets.only(top: 6),
+        children: [
+          // Resultados da pesquisa inline diretamente no Hub (sem mudar de tela)
+          if (query.isNotEmpty) ...[
+            _buildInlineSearchResults(searchResults, query, isDark),
+            const SizedBox(height: 20),
+          ],
+
+          // 1. Card "Popular"
+          if (_populares.isNotEmpty) ...[
+            PopularPlantsRow(plantas: _populares),
+            const SizedBox(height: 22),
+          ],
+
+          // 2. Bloco "Toda as Plantas" com acordeão "Principais Aspectos"
+          if (_todasPreview.isNotEmpty) ...[
+            TodasPlantasHubCard(
+              plantas: _todasPreview,
+              onSeeAllTap: () => _switchTab(2),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // 3. Carrossel "Destaques" com animação de escala ao arrastar
+          if (_destaques.isNotEmpty) ...[
+            DestaqueCarousel(destaques: _destaques),
+            const SizedBox(height: 26),
+          ],
+
+          // 4. Seção "Adicionados" (exibe 4 no Hub e abre a tela com as 10 recentes em "Explorar")
+          if (_recentes.isNotEmpty)
+            RecentesCarousel(
+              plantas: _recentes,
+              title: 'Adicionados',
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInlineSearchResults(
+    List<PlantModel> results,
+    String query,
+    bool isDark,
+  ) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? SumaColors.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF007A1E).withValues(alpha: 0.35),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.10),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  'Resultados para "$query" (${results.length})',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? SumaColors.greenSage : const Color(0xFF0A5C1A),
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  _searchController.clear();
+                  _searchFocusNode.unfocus();
+                  setState(() => _searchQuery = '');
+                },
+                child: Text(
+                  'Limpar',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white70 : Colors.grey.shade600,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (results.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'Nenhuma planta encontrada com esse termo.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.white60 : Colors.grey.shade600,
+                ),
+              ),
+            )
+          else
+            ...results.take(6).map((plant) {
+              return InkWell(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DetailScreen(plantaId: plant.id),
+                  ),
+                ),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: plant.imagemUrl.isNotEmpty
+                              ? Image.network(
+                                  plant.imagemUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: SumaColors.greenDeep,
+                                    child: const Icon(
+                                      Icons.eco_rounded,
+                                      color: Colors.white54,
+                                      size: 22,
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  color: SumaColors.greenDeep,
+                                  child: const Icon(
+                                    Icons.eco_rounded,
+                                    color: Colors.white54,
+                                    size: 22,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              plant.nome,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF1A1A2E),
+                              ),
+                            ),
+                            if (plant.nomeCientifico.isNotEmpty)
+                              Text(
+                                plant.nomeCientifico,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                  color: SumaColors.greenBright,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: isDark
+                            ? SumaColors.greenSage
+                            : const Color(0xFF0A5C1A),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  // ── Aba 2: Catálogo Completo ("Todas as Plantas") ──────────────────────────
+
+  Widget _buildAllPlantsCatalogTab(bool isDark) {
+    final allLoaded = _plantaDocs.map((doc) {
       try {
         return PlantModel.fromSnapshot(doc);
       } catch (_) {
@@ -223,91 +714,31 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }).whereType<PlantModel>().toList();
 
-    return CustomScrollView(
-      controller: _scrollController,
-      slivers: [
-        // ── Topo Verde Imersivo ────────────────────────────────
-        _buildGreenHeader(isDark),
+    final plantas = _searchQuery.trim().isEmpty
+        ? allLoaded
+        : allLoaded.where((p) => _matchesSearch(p, _searchQuery)).toList();
 
-        // ── Seção "Popular" (dentro do topo verde) ────────────
-        if (_populares.isNotEmpty)
-          SliverToBoxAdapter(
-            child: Container(
-              color: isDark ? SumaColors.darkBg : SumaColors.greenDeep,
-              child: Column(
-                children: [
-                  PopularPlantsRow(plantas: _populares),
-                  const SizedBox(height: 20),
-                  // Curva inferior para transição suave
-                  Container(
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? SumaColors.darkBg
-                          : Theme.of(context).scaffoldBackgroundColor,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(28),
-                        topRight: Radius.circular(28),
-                      ),
-                    ),
-                  ),
-                ],
+    return CustomScrollView(
+      controller: _catalogScrollController,
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+            child: Text(
+              _selectedCategory != null
+                  ? 'Plantas: $_selectedCategory'
+                  : 'Todas as Plantas',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: isDark ? SumaColors.greenSage : const Color(0xFF0A5C1A),
               ),
             ),
           ),
-
-        // ── Carrossel Destaques ────────────────────────────────
-        if (_destaques.isNotEmpty)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: DestaqueCarousel(destaques: _destaques),
-            ),
-          ),
-
-        // ── Carrossel Adicionados Recentemente ─────────────────
-        if (_recentes.isNotEmpty)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: RecentesCarousel(plantas: _recentes),
-            ),
-          ),
-
-        // ── Cabeçalho "Todas as Plantas" ───────────────────────
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 4, height: 18,
-                  decoration: BoxDecoration(
-                    color: SumaColors.greenBright,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _selectedCategory != null
-                      ? _selectedCategory!.toUpperCase()
-                      : 'TODAS AS PLANTAS',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                    color: isDark ? Colors.white70 : SumaColors.greenDeep,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
-
-        // ── Chips de categoria ─────────────────────────────────
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.only(bottom: 14),
             child: CategoryChipBar(
               categories: _kCategories,
               selected: _selectedCategory,
@@ -315,8 +746,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-
-        // ── Lista de plantas ───────────────────────────────────
         _isInitialLoading
             ? const SliverFillRemaining(
                 child: Center(child: CircularProgressIndicator()),
@@ -336,7 +765,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(
                             _selectedCategory != null
                                 ? 'Nenhuma planta em "$_selectedCategory".'
-                                : 'Nenhuma planta cadastrada.',
+                                : 'Nenhuma planta encontrada.',
                             style: TextStyle(
                               color: isDark ? Colors.white54 : Colors.grey.shade500,
                             ),
@@ -349,8 +778,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         if (index == plantas.length) {
-                          // Carregador de "página seguinte"
-                          return _hasMore
+                          return _hasMore && _searchQuery.trim().isEmpty
                               ? const Padding(
                                   padding: EdgeInsets.all(24),
                                   child: Center(child: CircularProgressIndicator()),
@@ -362,7 +790,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: isDark ? Colors.white38 : Colors.grey.shade400,
+                                      color: isDark
+                                          ? Colors.white38
+                                          : Colors.grey.shade400,
                                     ),
                                   ),
                                 );
@@ -372,132 +802,335 @@ class _HomeScreenState extends State<HomeScreen> {
                       childCount: plantas.length + 1,
                     ),
                   ),
-
-        // ── Padding final ─────────────────────────────────────
-        const SliverToBoxAdapter(child: SizedBox(height: 32)),
+        const SliverToBoxAdapter(child: SizedBox(height: 110)),
       ],
     );
   }
 
-  // ── Topo verde com menu, avatar, search e Popular ──────────
+  // ── Barra de Navegação Inferior em Onda Suave com Círculo Verde Centralizado ──
 
-  SliverToBoxAdapter _buildGreenHeader(bool isDark) {
-    return SliverToBoxAdapter(
-      child: Container(
-        color: isDark ? SumaColors.darkBg : SumaColors.greenDeep,
-        child: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              children: [
-                // ── Linha 1: menu hambúrguer + avatar ────────────────
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Botão de menu
-                    Builder(builder: (ctx) {
-                      return GestureDetector(
-                        onTap: () => Scaffold.of(ctx).openDrawer(),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          child: Icon(
-                            Icons.menu_rounded,
-                            color: Colors.white.withValues(alpha: 0.9),
-                            size: 28,
-                          ),
-                        ),
-                      );
-                    }),
+  Widget _buildBottomNavBar(bool isDark) {
+    final Color barBgColor = isDark ? SumaColors.darkCard : Colors.white;
+    final Color borderColor = const Color(0xFF147A2E).withValues(alpha: 0.20);
+    final double bottomInset = MediaQuery.of(context).padding.bottom;
 
-                    // Avatar do usuário
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.15),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          width: 2,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.person_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                  ],
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(end: _currentNavIndex.toDouble()),
+      duration: const Duration(milliseconds: 380),
+      curve: Curves.easeOutCubic,
+      builder: (context, animatedIndex, _) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final totalWidth = constraints.maxWidth;
+            const double horizontalPadding = 12.0;
+            final double slotWidth = (totalWidth - horizontalPadding * 2) / 3;
+            final double waveCenterX =
+                horizontalPadding + slotWidth * (animatedIndex + 0.5);
+
+            // Geometria vertical:
+            // y = 0: topo da crista da onda branca
+            // y = 20: linha reta superior da barra branca (waveHeight = 20)
+            // Círculo verde (48x48): topo em y = 6, centro em y = 30, base em y = 54
+            // Rótulos: iniciam em y = 57 até y = 89
+            const double waveHeight = 20.0;
+            const double barBodyHeight = 72.0;
+            const double totalHeight = waveHeight + barBodyHeight;
+
+            return SizedBox(
+              width: totalWidth,
+              height: totalHeight + bottomInset,
+              child: CustomPaint(
+                painter: _WaveBottomBarPainter(
+                  waveCenterX: waveCenterX,
+                  waveHeight: waveHeight,
+                  fillColor: barBgColor,
+                  borderColor: borderColor,
+                  isDark: isDark,
                 ),
-
-                const SizedBox(height: 16),
-
-                // ── Linha 2: Barra de busca ────────────────────────
-                Row(
-                  children: [
-                    // Campo de busca
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => showSearch(
-                          context: context,
-                          delegate: PlantSearchDelegate(),
-                        ),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: horizontalPadding,
+                    right: horizontalPadding,
+                    bottom: bottomInset,
+                  ),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Único círculo verde perfeitamente no centro da onda
+                      Positioned(
+                        top: 6,
+                        left: (slotWidth * animatedIndex) + (slotWidth - 48) / 2,
+                        width: 48,
+                        height: 48,
                         child: Container(
-                          height: 46,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(25),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.search_rounded,
-                                color: Colors.white.withValues(alpha: 0.7),
-                                size: 20,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                'Pesquise aqui',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.6),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                ),
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF43A047),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF43A047).withValues(alpha: 0.30),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
                         ),
                       ),
-                    ),
 
-                    const SizedBox(width: 10),
-
-                    // Botão de filtro
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: SumaColors.greenBright,
-                        borderRadius: BorderRadius.circular(14),
+                      // Ícones e rótulos das 3 abas
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _BottomNavItem(
+                              icon: Icons.home_outlined,
+                              label: 'Home',
+                              isSelected: _currentNavIndex == 0,
+                              isDark: isDark,
+                              onTap: () => _switchTab(0),
+                            ),
+                          ),
+                          Expanded(
+                            child: _BottomNavItem(
+                              icon: Icons.description_outlined,
+                              label: 'Notícias',
+                              isSelected: _currentNavIndex == 1,
+                              isDark: isDark,
+                              onTap: () => _switchTab(1),
+                            ),
+                          ),
+                          Expanded(
+                            child: _BottomNavItem(
+                              icon: Icons.apps_rounded,
+                              label: 'Todas as\nPlantas',
+                              isSelected: _currentNavIndex == 2,
+                              isDark: isDark,
+                              onTap: () => _switchTab(2),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: const Icon(
-                        Icons.tune_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
 
-                const SizedBox(height: 20),
-              ],
+/// Desenha o fundo branco da barra inferior com cantos arredondados e a onda
+/// suave de pontas redondas acompanhando o botão ativo.
+class _WaveBottomBarPainter extends CustomPainter {
+  final double waveCenterX;
+  final double waveHeight;
+  final Color fillColor;
+  final Color borderColor;
+  final bool isDark;
+
+  const _WaveBottomBarPainter({
+    required this.waveCenterX,
+    required this.waveHeight,
+    required this.fillColor,
+    required this.borderColor,
+    required this.isDark,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const double cornerRadius = 26.0;
+    const double waveHalfWidth = 54.0;
+
+    final double leftStart = (waveCenterX - waveHalfWidth).clamp(cornerRadius, size.width - cornerRadius);
+    final double rightEnd = (waveCenterX + waveHalfWidth).clamp(cornerRadius, size.width - cornerRadius);
+
+    final Path path = Path();
+
+    // Inicia na base esquerda e sobe até a curva do canto superior esquerdo
+    path.moveTo(0, size.height);
+    path.lineTo(0, waveHeight + cornerRadius);
+    path.quadraticBezierTo(0, waveHeight, cornerRadius, waveHeight);
+
+    // Linha superior até o início da onda
+    if (leftStart > cornerRadius) {
+      path.lineTo(leftStart, waveHeight);
+    }
+
+    // Subida suave da onda com ombros bem redondos até o topo (waveCenterX, 0)
+    path.cubicTo(
+      waveCenterX - waveHalfWidth * 0.52,
+      waveHeight,
+      waveCenterX - waveHalfWidth * 0.46,
+      0,
+      waveCenterX,
+      0,
+    );
+
+    // Descida simétrica da onda de volta para a linha da barra (waveHeight)
+    path.cubicTo(
+      waveCenterX + waveHalfWidth * 0.46,
+      0,
+      waveCenterX + waveHalfWidth * 0.52,
+      waveHeight,
+      rightEnd,
+      waveHeight,
+    );
+
+    // Linha superior até o canto superior direito
+    if (rightEnd < size.width - cornerRadius) {
+      path.lineTo(size.width - cornerRadius, waveHeight);
+    }
+    path.quadraticBezierTo(
+      size.width,
+      waveHeight,
+      size.width,
+      waveHeight + cornerRadius,
+    );
+
+    // Desce até a base direita e fecha
+    path.lineTo(size.width, size.height);
+    path.close();
+
+    // Sombra suave projetada para cima
+    canvas.save();
+    canvas.translate(0, -3);
+    canvas.drawShadow(
+      path,
+      Colors.black.withValues(alpha: isDark ? 0.55 : 0.18),
+      8.0,
+      false,
+    );
+    canvas.restore();
+
+    // Preenchimento branco (ou darkCard)
+    final Paint fillPaint = Paint()
+      ..color = fillColor
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+    canvas.drawPath(path, fillPaint);
+
+    // Contorno superior sutil acompanhando a curva e a onda
+    final Path borderPath = Path()
+      ..moveTo(0, waveHeight + cornerRadius)
+      ..quadraticBezierTo(0, waveHeight, cornerRadius, waveHeight);
+    if (leftStart > cornerRadius) {
+      borderPath.lineTo(leftStart, waveHeight);
+    }
+    borderPath
+      ..cubicTo(
+        waveCenterX - waveHalfWidth * 0.52,
+        waveHeight,
+        waveCenterX - waveHalfWidth * 0.46,
+        0,
+        waveCenterX,
+        0,
+      )
+      ..cubicTo(
+        waveCenterX + waveHalfWidth * 0.46,
+        0,
+        waveCenterX + waveHalfWidth * 0.52,
+        waveHeight,
+        rightEnd,
+        waveHeight,
+      );
+    if (rightEnd < size.width - cornerRadius) {
+      borderPath.lineTo(size.width - cornerRadius, waveHeight);
+    }
+    borderPath.quadraticBezierTo(
+      size.width,
+      waveHeight,
+      size.width,
+      waveHeight + cornerRadius,
+    );
+
+    final Paint borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..isAntiAlias = true;
+    canvas.drawPath(borderPath, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _WaveBottomBarPainter oldDelegate) {
+    return oldDelegate.waveCenterX != waveCenterX ||
+        oldDelegate.fillColor != fillColor ||
+        oldDelegate.isDark != isDark;
+  }
+}
+
+class _BottomNavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _BottomNavItem({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const inactiveMint = Color(0xFF76C888);
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        height: 92,
+        child: Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            // Ícone: quando selecionado fica exatamente no centro do círculo verde (y = 30, topo = 6, altura = 48);
+            // quando inativo fica suavemente mais abaixo na área plana da barra
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeOutCubic,
+              top: isSelected ? 6 : 22,
+              height: isSelected ? 48 : 34,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: 26,
+                  color: isSelected ? Colors.white : inactiveMint,
+                ),
+              ),
             ),
-          ),
+
+            // Rótulo alinhado abaixo do círculo verde (top = 57), sem sobreposição e sem overflow
+            Positioned(
+              top: 57,
+              left: 2,
+              right: 2,
+              bottom: 2,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: isSelected ? 12.5 : 10.5,
+                    height: 1.05,
+                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                    color: isSelected
+                        ? (isDark ? SumaColors.greenSage : const Color(0xFF0E6322))
+                        : (isDark ? Colors.white54 : inactiveMint),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

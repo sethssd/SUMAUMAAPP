@@ -2,16 +2,9 @@ import 'package:flutter/material.dart';
 import '../../models/plant_model.dart';
 import '../../utils/app_theme.dart';
 import '../../screens/detail_screen.dart';
+import 'todas_plantas_hub_card.dart';
 
-/// Card de planta enriquecido com badges condicionais e botões de ação rápida.
-///
-/// Badges exibidos quando o campo correspondente não está vazio:
-///   🔊 Áudio (audioUrl), 🧊 Modelo 3D (modelo3dUrl),
-///   🔬 Artigos (referenciasCientificas não-vazio).
-///
-/// Botões de ação rápida:
-///   "Resumo Científico" → abre DetailScreen na aba Científico.
-///   "Saiba Mais" → abre DetailScreen na aba Geral.
+/// Card de planta enriquecido com pílulas automáticas/manuais e botões de ação rápida.
 class PlantCard extends StatelessWidget {
   final PlantModel plant;
 
@@ -29,11 +22,10 @@ class PlantCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final bool hasAudio = plant.audioUrl.isNotEmpty;
-    final bool hasModel3d = plant.modelo3dUrl.isNotEmpty;
-    final bool hasArticles = plant.referenciasCientificas != null &&
-        plant.referenciasCientificas!.isNotEmpty;
+    final hasModel3d = plant.hasModel3d;
+    final hasCientifico = plant.hasCientifico || plant.hasArticles;
+    final resumo = plant.resumoLimpo;
+    final pills = buildPlantPills(plant, includeResumo: false, includeManualAspects: true);
 
     return Card(
       child: InkWell(
@@ -48,8 +40,8 @@ class PlantCard extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
-                  width: 76,
-                  height: 76,
+                  width: 82,
+                  height: 82,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -66,7 +58,6 @@ class PlantCard extends StatelessWidget {
                               color: SumaColors.greenDeep.withValues(alpha: 0.3),
                               child: const Icon(Icons.eco_rounded, color: Colors.white54, size: 32),
                             ),
-                      // Ícone 3D se existir
                       if (hasModel3d)
                         Positioned(
                           bottom: 3, right: 3,
@@ -91,7 +82,7 @@ class PlantCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Nome + badges
+                    // Nome + categoria
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -99,22 +90,16 @@ class PlantCard extends StatelessWidget {
                           child: Text(
                             plant.nome,
                             style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? Colors.white : const Color(0xFF0A5C1A),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 4),
-                        // Badges compactos
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (hasAudio) _Badge(icon: Icons.volume_up_rounded, color: Colors.teal),
-                            if (hasModel3d) _Badge(icon: Icons.view_in_ar_rounded, color: SumaColors.greenBright),
-                            if (hasArticles) _Badge(icon: Icons.science_rounded, color: Colors.indigo),
-                          ],
-                        ),
+                        if (plant.categoria.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          _CategoryTag(label: plant.categoria, isDark: isDark),
+                        ],
                       ],
                     ),
 
@@ -123,7 +108,7 @@ class PlantCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         plant.nomeCientifico,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
                           fontStyle: FontStyle.italic,
                           color: SumaColors.greenBright,
@@ -131,26 +116,40 @@ class PlantCard extends StatelessWidget {
                       ),
                     ],
 
-                    // Categoria
-                    if (plant.categoria.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      _CategoryTag(label: plant.categoria, isDark: isDark),
-                    ],
-
-                    // Descrição curta
-                    if (plant.descricaoCurta.isNotEmpty) ...[
+                    // Descrição limpa (sem HTML)
+                    if (resumo.isNotEmpty) ...[
                       const SizedBox(height: 5),
                       Text(
-                        plant.descricaoCurta,
+                        resumo,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
                           height: 1.35,
                           color: isDark
-                              ? Colors.white.withValues(alpha: 0.55)
-                              : Colors.grey.shade600,
+                              ? Colors.white.withValues(alpha: 0.65)
+                              : Colors.grey.shade700,
                         ),
+                      ),
+                    ],
+
+                    // Pílulas de aspectos
+                    if (pills.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 5,
+                        children: pills
+                            .map(
+                              (pill) => PlantAspectPill(
+                                data: pill,
+                                onTap: () => _openDetail(
+                                  context,
+                                  initialTab: pill.targetTab,
+                                ),
+                              ),
+                            )
+                            .toList(),
                       ),
                     ],
 
@@ -159,7 +158,7 @@ class PlantCard extends StatelessWidget {
                     // ── Botões rápidos ──────────────────────────
                     Row(
                       children: [
-                        if (hasArticles) ...[
+                        if (hasCientifico) ...[
                           _QuickButton(
                             label: 'Resumo Científico',
                             icon: Icons.biotech_outlined,
@@ -190,27 +189,6 @@ class PlantCard extends StatelessWidget {
 }
 
 // ── Sub-widgets ──────────────────────────────────────────────
-
-/// Ícone circular colorido para áudio / 3D / artigos.
-class _Badge extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-
-  const _Badge({required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(left: 4),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, size: 12, color: color),
-    );
-  }
-}
 
 /// Pílula de categoria.
 class _CategoryTag extends StatelessWidget {

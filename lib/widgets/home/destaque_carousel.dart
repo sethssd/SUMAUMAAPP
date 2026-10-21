@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import '../../models/destaque_model.dart';
 import '../../utils/app_theme.dart';
 
-/// Carrossel de banners "Destaques" com auto-scroll e indicador de página.
+/// Carrossel horizontal "Destaques" com animação de escala ao deslizar:
+/// começa alinhado à esquerda em tamanho total enquanto o próximo card à direita
+/// aparece menor; ao arrastar para o lado, o card que sai diminui suavemente e o
+/// que entra cresce até o tamanho principal.
 class DestaqueCarousel extends StatefulWidget {
   final List<DestaqueModel> destaques;
 
@@ -15,15 +17,46 @@ class DestaqueCarousel extends StatefulWidget {
 }
 
 class _DestaqueCarouselState extends State<DestaqueCarousel> {
-  int _current = 0;
-  final CarouselSliderController _carouselController = CarouselSliderController();
+  late final PageController _pageController;
 
-  Future<void> _openLink(String url) async {
-    if (url.isEmpty) return;
-    final uri = Uri.tryParse(url);
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(
+      viewportFraction: 0.76,
+      initialPage: 0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _openLink(BuildContext context, String url) async {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Esta postagem ainda não possui um link externo vinculado.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    final normalized =
+        trimmed.startsWith('http://') || trimmed.startsWith('https://')
+            ? trimmed
+            : 'https://$trimmed';
+    final uri = Uri.tryParse(normalized);
     if (uri == null) return;
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      debugPrint('Não foi possível abrir: $url');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Não foi possível abrir o link: $trimmed')),
+        );
+      }
     }
   }
 
@@ -35,192 +68,164 @@ class _DestaqueCarouselState extends State<DestaqueCarousel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Título da seção ───────────────────────────────────
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 4, height: 18,
-                decoration: BoxDecoration(
-                  color: SumaColors.greenBright,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'DESTAQUES',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
-                  color: isDark ? Colors.white70 : SumaColors.greenDeep,
-                ),
-              ),
-              const Spacer(),
-              // Indicadores de página
-              Row(
-                children: List.generate(widget.destaques.length, (i) {
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    margin: const EdgeInsets.only(left: 4),
-                    width: _current == i ? 18 : 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: _current == i
-                          ? SumaColors.greenBright
-                          : (isDark ? Colors.white24 : const Color(0xFFB7DFC6)),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  );
-                }),
-              ),
-            ],
+          padding: const EdgeInsets.fromLTRB(22, 0, 22, 14),
+          child: Text(
+            'Destaques',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: isDark ? SumaColors.greenSage : const Color(0xFF0A5C1A),
+            ),
           ),
         ),
+        SizedBox(
+          height: 375,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 16),
+            child: PageView.builder(
+              controller: _pageController,
+              padEnds: false,
+              clipBehavior: Clip.none,
+              itemCount: widget.destaques.length,
+              itemBuilder: (context, index) {
+                final d = widget.destaques[index];
+                return AnimatedBuilder(
+                  animation: _pageController,
+                  builder: (context, child) {
+                    double currentPage = 0.0;
+                    if (_pageController.hasClients &&
+                        _pageController.position.haveDimensions) {
+                      currentPage =
+                          _pageController.page ?? _pageController.initialPage.toDouble();
+                    }
+                    final distance = (currentPage - index).abs().clamp(0.0, 1.0);
+                    // O card ativo fica em escala 1.0; os adjacentes ficam menores (0.87)
+                    final scale = 1.0 - (distance * 0.13);
+                    final verticalPadding = distance * 22.0;
 
-        // ── Carrossel ─────────────────────────────────────────
-        CarouselSlider.builder(
-          carouselController: _carouselController,
-          itemCount: widget.destaques.length,
-          options: CarouselOptions(
-            height: 180,
-            viewportFraction: 0.92,
-            autoPlay: true,
-            autoPlayInterval: const Duration(seconds: 4),
-            enlargeCenterPage: true,
-            onPageChanged: (index, reason) {
-              setState(() {
-                _current = index;
-              });
-            },
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        right: 14,
+                        top: verticalPadding,
+                        bottom: verticalPadding,
+                      ),
+                      child: Transform.scale(
+                        scale: scale,
+                        alignment: Alignment.centerLeft,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: _DestaqueCard(
+                    destaque: d,
+                    isDark: isDark,
+                    onTap: () => _openLink(context, d.link),
+                  ),
+                );
+              },
+            ),
           ),
-          itemBuilder: (context, index, realIndex) {
-            final d = widget.destaques[index];
-            return GestureDetector(
-              onTap: () => _openLink(d.link),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: isDark ? SumaColors.darkCard : Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Imagem de fundo
-                    if (d.imagemUrl.isNotEmpty)
-                      Image.network(
-                        d.imagemUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: SumaColors.greenDeep.withValues(alpha: 0.8),
-                        ),
-                      )
-                    else
-                      Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [SumaColors.greenDeep, SumaColors.greenMid],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                      ),
-
-                    // Gradiente de leitura
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.7),
-                            ],
-                            stops: const [0.35, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Textos
-                    Positioned(
-                      bottom: 16,
-                      left: 16,
-                      right: 16,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            d.titulo,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.2,
-                              shadows: [Shadow(color: Colors.black54, blurRadius: 6)],
-                            ),
-                          ),
-                          if (d.resumo.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              d.resumo,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                                shadows: [Shadow(color: Colors.black45, blurRadius: 4)],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-
-                    // Badge "Leia mais" se tiver link
-                    if (d.link.isNotEmpty)
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: SumaColors.greenBright.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.open_in_new_rounded, color: Colors.white, size: 12),
-                              SizedBox(width: 4),
-                              Text(
-                                'Leia mais',
-                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            );
-          },
         ),
       ],
+    );
+  }
+}
+
+class _DestaqueCard extends StatelessWidget {
+  final DestaqueModel destaque;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _DestaqueCard({
+    required this.destaque,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F3D1E) : const Color(0xFF007A1E),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.14),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Imagem superior com cantos arredondados
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: SizedBox(
+                height: 152,
+                width: double.infinity,
+                child: destaque.imagemUrl.isNotEmpty
+                    ? Image.network(
+                        destaque.imagemUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: SumaColors.greenDeep,
+                          child: const Icon(
+                            Icons.newspaper_rounded,
+                            color: Colors.white54,
+                            size: 40,
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: SumaColors.greenDeep,
+                        child: const Icon(
+                          Icons.newspaper_rounded,
+                          color: Colors.white54,
+                          size: 40,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Título da matéria/postagem
+            Text(
+              destaque.titulo,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16.5,
+                fontWeight: FontWeight.w800,
+                height: 1.2,
+              ),
+            ),
+
+            if (destaque.resumo.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Expanded(
+                child: Text(
+                  destaque.resumo,
+                  maxLines: 6,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.justify,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.92),
+                    fontSize: 10.5,
+                    height: 1.32,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
