@@ -11,6 +11,7 @@ class AppConstants {
 
   // User Roles
   static const String roleSuperAdmin = 'super_admin';
+  static const String roleAdmin = 'admin';
   static const String roleEscritor = 'escritor';
   static const String roleUsuario = 'usuario';
   static const String roleSemCargo = 'sem_cargo';

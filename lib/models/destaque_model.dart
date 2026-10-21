@@ -25,13 +25,14 @@ class DestaqueModel {
 
   factory DestaqueModel.fromSnapshot(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final pubTs = (data['dataPublicacao'] ?? data['dataCriacao']) as Timestamp?;
     return DestaqueModel(
       id: doc.id,
       titulo: data['titulo'] ?? '',
       resumo: data['resumo'] ?? '',
       imagemUrl: data['imagemUrl'] ?? '',
       link: data['link'] ?? '',
-      dataPublicacao: (data['dataPublicacao'] as Timestamp?)?.toDate(),
+      dataPublicacao: pubTs?.toDate(),
       ordem: (data['ordem'] as num?)?.toInt() ?? 0,
     );
   }
