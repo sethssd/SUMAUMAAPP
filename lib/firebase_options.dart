@@ -70,7 +70,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: Env.firebaseApiKeyWeb,
-    appId: '1:192051097466:web:25318807b8ccbbcf29f0c3', // Specific hardcoded app id for windows based on original replaceAll
+    appId: Env.firebaseAppIdWindows, // Specific hardcoded app id for windows based on original replaceAll
     messagingSenderId: Env.firebaseMessagingSenderId,
     projectId: Env.firebaseProjectId,
     authDomain: Env.firebaseAuthDomain,

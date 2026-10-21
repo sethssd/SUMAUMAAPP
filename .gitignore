@@ -60,3 +60,5 @@ bfg.jar
 *.json
 /icons
 /assets/icons
+node_modules/
+**/node_modules/

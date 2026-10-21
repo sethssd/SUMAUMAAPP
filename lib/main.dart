@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:just_audio_background/just_audio_background.dart';
@@ -9,12 +10,16 @@ import 'utils/theme_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await JustAudioBackground.init(
-    androidNotificationChannelId: AppConstants.audioChannelId,
-    androidNotificationChannelName: 'Reprodução de Áudio',
-    androidNotificationOngoing: true,
-    androidNotificationIcon: 'mipmap/launcher_icon',
-  );
+  if (!kIsWeb) {
+    try {
+      await JustAudioBackground.init(
+        androidNotificationChannelId: AppConstants.audioChannelId,
+        androidNotificationChannelName: 'Reprodução de Áudio',
+        androidNotificationOngoing: true,
+        androidNotificationIcon: 'mipmap/launcher_icon',
+      );
+    } catch (_) {}
+  }
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
