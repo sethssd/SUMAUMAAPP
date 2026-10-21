@@ -63,5 +63,11 @@ service cloud.firestore {
       // Super admin pode listar e deletar solicitações
       allow list, delete: if isLoggedIn() && getRole() == 'super_admin';
     }
+
+    // --- REGRAS PARA "DESTAQUES" (NOTÍCIAS) ---
+    match /destaques/{destaqueId} {
+      allow read: if true;
+      allow write: if isLoggedIn() && (getRole() == 'super_admin' || getRole() == 'admin' || getRole() == 'escritor');
+    }
   }
 }
