@@ -1,11 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
 import '../env.dart';
+import '../utils/app_constants.dart';
 
 class CuidadoForm {
   String nivel = 'avisoGeral';
@@ -55,6 +56,20 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
   
   final List<CuidadoForm> _cuidadosForm = [];
   final List<LocalForm> _locaisForm = [];
+  final Set<String> _selectedAspectos = {};
+  bool _isPopular = false;
+
+  static const List<String> _kOpcoesAspectos = [
+    'Chá',
+    'Suco',
+    'Banho',
+    'Óleo',
+    'Fruto',
+    'Semente',
+    'Folha',
+    'Casca',
+    'Raiz',
+  ];
 
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
@@ -64,21 +79,49 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
   bool _isUploadingImage = false;
   bool _isUploadingModel = false;
   bool _isUploadingAudio = false;
+  bool _canUpload = true;
 
-  // 3. INICIALIZAR O CLOUDINARY
   final cloudinary = CloudinaryPublic(
     Env.cloudinaryCloudName,
     Env.cloudinaryUploadPreset,
     cache: false,
   );
-
   @override
   void initState() {
     super.initState();
+    _checkPermissions();
     if (widget.plantaId != null) {
       _isEditing = true;
       _loadPlantaData();
     }
+  }
+
+  Future<void> _checkPermissions() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _showErrorAndPop('Você precisa estar logado.');
+      return;
+    }
+
+    try {
+      final doc = await FirebaseFirestore.instance.collection(AppConstants.collectionUsers).doc(user.uid).get();
+      if (!doc.exists) {
+        _showErrorAndPop('Usuário não encontrado.');
+        return;
+      }
+      final role = doc.data()?['role'] ?? AppConstants.roleUsuario;
+      if (role != AppConstants.roleEscritor && role != AppConstants.roleAdmin && role != AppConstants.roleSuperAdmin) {
+        _showErrorAndPop('Acesso negado. Apenas escritores ou administradores podem acessar esta página.');
+      }
+    } catch (e) {
+      _showErrorAndPop('Erro ao verificar permissões: \$e');
+    }
+  }
+
+  void _showErrorAndPop(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+    Navigator.of(context).pop();
   }
 
   @override
@@ -160,6 +203,15 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
         _keywordsController.text = _parseListFieldToString(data['keywords']);
         _categoriaController.text = data['categoria'] ?? '';
         _audioDescricaoUrlController.text = data['audioDescricaoUrl'] ?? '';
+        _isPopular = data['isPopular'] == true;
+
+        _selectedAspectos.clear();
+        if (data['aspectosUso'] is List) {
+          for (final item in data['aspectosUso']) {
+            final str = item.toString().trim();
+            if (str.isNotEmpty) _selectedAspectos.add(str);
+          }
+        }
 
         if (data['cuidadosAvancados'] != null && (data['cuidadosAvancados'] as List).isNotEmpty) {
           for (var c in data['cuidadosAvancados']) {
@@ -196,77 +248,107 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
     setState(() => _isLoading = false);
   }
 
-  // 4. FUNÇÃO: UPLOAD DE IMAGEM 2D (Web-safe)
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red, duration: const Duration(seconds: 4)),
+    );
+  }
+
+  bool _validateFileSize(int length) {
+    if (length > 10 * 1024 * 1024) {
+      _showError("Arquivo muito grande. Máximo 10MB.");
+      return false;
+    }
+    return true;
+  }
+
+  bool _checkRateLimit() {
+    if (!_canUpload) {
+      _showError("Aguarde alguns segundos entre uploads.");
+      return false;
+    }
+    _canUpload = false;
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _canUpload = true);
+    });
+    return true;
+  }
+
+  // 4. FUNÇÃO: UPLOAD DE IMAGEM 2D
   Future<void> _pickAndUploadImage() async {
+    if (!_checkRateLimit()) return;
+    
     setState(() => _isUploadingImage = true);
     try {
-      final XFile? image = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-      );
-      if (image == null) {
-        setState(() => _isUploadingImage = false);
-        return;
-      }
+      final XFile? image = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (image == null) return;
 
       final bytes = await image.readAsBytes();
+      if (!_validateFileSize(bytes.length)) return;
 
-      CloudinaryResponse response = await cloudinary.uploadFile(
-        CloudinaryFile.fromByteData(
-          bytes.buffer.asByteData(),
+      final response = await cloudinary.uploadFile(
+        CloudinaryFile.fromBytesData(
+          bytes,
           identifier: image.name,
+          folder: 'sumauma_test',
           resourceType: CloudinaryResourceType.Image,
         ),
       );
 
-      // Preenche o campo de texto com a nova URL
-      setState(() {
-        _imagemUrlController.text = response.secureUrl;
-        _isUploadingImage = false;
-      });
+      if (mounted) {
+        setState(() => _imagemUrlController.text = response.secureUrl);
+      }
     } catch (e) {
-      setState(() => _isUploadingImage = false);
       debugPrint("Erro no upload da imagem: \$e");
+      _showError("Erro no upload: \$e");
+    } finally {
+      if (mounted) setState(() => _isUploadingImage = false);
     }
   }
 
-  // 5. UPLOAD DE MODELO 3D (.GLB) (Web-safe)
+  // 5. UPLOAD DE MODELO 3D (.GLB)
   Future<void> _pickAndUploadModel() async {
+    if (!_checkRateLimit()) return;
+    
     setState(() => _isUploadingModel = true);
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.any, // .glb
-        withData: true, // OBRIGATÓRIO PARA O WEB
+        withData: true, 
       );
 
-      if (result == null || (result.files.single.bytes == null && result.files.single.path == null)) {
-        setState(() => _isUploadingModel = false);
-        return;
-      }
+      if (result == null || (result.files.single.bytes == null && result.files.single.path == null)) return;
 
-      final fileBytes = result.files.single.bytes;
+      final fileBytes = result.files.single.bytes ?? await File(result.files.single.path!).readAsBytes();
+      if (!_validateFileSize(fileBytes.length)) return;
+
       final fileName = result.files.single.name;
       
-      CloudinaryFile cloudinaryFile;
-      if (fileBytes != null) {
-        cloudinaryFile = CloudinaryFile.fromByteData(fileBytes.buffer.asByteData(), identifier: fileName, resourceType: CloudinaryResourceType.Raw);
-      } else {
-        cloudinaryFile = CloudinaryFile.fromFile(result.files.single.path!, resourceType: CloudinaryResourceType.Raw);
+      final response = await cloudinary.uploadFile(
+        CloudinaryFile.fromBytesData(
+          fileBytes,
+          identifier: fileName,
+          folder: 'sumauma_test',
+          resourceType: CloudinaryResourceType.Raw,
+        ),
+      );
+
+      if (mounted) {
+        setState(() => _modelo3dUrlController.text = response.secureUrl);
       }
-
-      CloudinaryResponse response = await cloudinary.uploadFile(cloudinaryFile);
-
-      setState(() {
-        _modelo3dUrlController.text = response.secureUrl;
-        _isUploadingModel = false;
-      });
     } catch (e) {
-      setState(() => _isUploadingModel = false);
       debugPrint("Erro no upload do modelo: \$e");
+      _showError("Erro no upload do modelo: \$e");
+    } finally {
+      if (mounted) setState(() => _isUploadingModel = false);
     }
   }
 
-  // 5.5 UPLOAD DE ÁUDIO (.MP3) (Web-safe)
+  // 5.5 UPLOAD DE ÁUDIO (.MP3)
   Future<void> _pickAndUploadAudio() async {
+    if (!_checkRateLimit()) return;
+    
     setState(() => _isUploadingAudio = true);
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -274,57 +356,64 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
         withData: true,
       );
 
-      if (result == null || (result.files.single.bytes == null && result.files.single.path == null)) {
-        setState(() => _isUploadingAudio = false);
-        return;
-      }
+      if (result == null || (result.files.single.bytes == null && result.files.single.path == null)) return;
 
-      final fileBytes = result.files.single.bytes;
+      final fileBytes = result.files.single.bytes ?? await File(result.files.single.path!).readAsBytes();
+      if (!_validateFileSize(fileBytes.length)) return;
+
       final fileName = result.files.single.name;
       
-      CloudinaryFile cloudinaryFile;
-      if (fileBytes != null) {
-        cloudinaryFile = CloudinaryFile.fromByteData(fileBytes.buffer.asByteData(), identifier: fileName, resourceType: CloudinaryResourceType.Video);
-      } else {
-        cloudinaryFile = CloudinaryFile.fromFile(result.files.single.path!, resourceType: CloudinaryResourceType.Video);
+      final response = await cloudinary.uploadFile(
+        CloudinaryFile.fromBytesData(
+          fileBytes,
+          identifier: fileName,
+          folder: 'sumauma_test',
+          resourceType: CloudinaryResourceType.Video,
+        ),
+      );
+
+      if (mounted) {
+        setState(() => _audioUrlController.text = response.secureUrl);
       }
-
-      CloudinaryResponse response = await cloudinary.uploadFile(cloudinaryFile);
-
-      setState(() {
-        _audioUrlController.text = response.secureUrl;
-        _isUploadingAudio = false;
-      });
     } catch (e) {
-      setState(() => _isUploadingAudio = false);
       debugPrint("Erro no upload do áudio: \$e");
+      _showError("Erro no upload do áudio: \$e");
+    } finally {
+      if (mounted) setState(() => _isUploadingAudio = false);
     }
   }
 
   Future<void> _pickAndUploadAudioDesc() async {
-    setState(() => _isUploadingAudio = true); // Reaproveitando o state de loading de audio
+    if (!_checkRateLimit()) return;
+    
+    setState(() => _isUploadingAudio = true); 
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.audio, withData: true);
-      if (result == null) {
-        setState(() => _isUploadingAudio = false);
-        return;
-      }
-      final fileBytes = result.files.single.bytes;
+      
+      if (result == null || (result.files.single.bytes == null && result.files.single.path == null)) return;
+
+      final fileBytes = result.files.single.bytes ?? await File(result.files.single.path!).readAsBytes();
+      if (!_validateFileSize(fileBytes.length)) return;
+
       final fileName = result.files.single.name;
-      CloudinaryFile cloudinaryFile;
-      if (fileBytes != null) {
-        cloudinaryFile = CloudinaryFile.fromByteData(fileBytes.buffer.asByteData(), identifier: fileName, resourceType: CloudinaryResourceType.Video);
-      } else {
-        cloudinaryFile = CloudinaryFile.fromFile(result.files.single.path!, resourceType: CloudinaryResourceType.Video);
+      
+      final response = await cloudinary.uploadFile(
+        CloudinaryFile.fromBytesData(
+          fileBytes,
+          identifier: fileName,
+          folder: 'sumauma_test',
+          resourceType: CloudinaryResourceType.Video,
+        ),
+      );
+
+      if (mounted) {
+        setState(() => _audioDescricaoUrlController.text = response.secureUrl);
       }
-      CloudinaryResponse response = await cloudinary.uploadFile(cloudinaryFile);
-      setState(() {
-        _audioDescricaoUrlController.text = response.secureUrl;
-        _isUploadingAudio = false;
-      });
     } catch (e) {
-      setState(() => _isUploadingAudio = false);
       debugPrint("Erro no upload da audiodescrição: \$e");
+      _showError("Erro no upload da audiodescrição: \$e");
+    } finally {
+      if (mounted) setState(() => _isUploadingAudio = false);
     }
   }
 
@@ -368,6 +457,9 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
       'keywords': keywords,
       'categoria': _categoriaController.text,
       'audioDescricaoUrl': _audioDescricaoUrlController.text,
+      'aspectosUso': _selectedAspectos.toList(),
+      'isPopular': _isPopular,
+      'updatedAt': FieldValue.serverTimestamp(),
       'cuidadosAvancados': _cuidadosForm.map((c) => {
         'nivel': c.nivel,
         'descricao': c.descricaoCtrl.text.trim(),
@@ -392,7 +484,15 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
             .doc(widget.plantaId!)
             .update(plantaData);
       } else {
-        plantaData['creatorId'] = FirebaseAuth.instance.currentUser?.uid;
+        final userId = FirebaseAuth.instance.currentUser?.uid;
+        if (userId == null) {
+          setState(() => _isLoading = false);
+          _showError('Você precisa estar logado para criar uma planta.');
+          return;
+        }
+        plantaData['creatorId'] = userId;
+        plantaData['dataCriacao'] = FieldValue.serverTimestamp();
+        plantaData['excluida'] = false;
         await FirebaseFirestore.instance.collection('plantas').add(plantaData);
       }
 
@@ -472,6 +572,63 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                         labelText: 'Descrição Curta (para lista)',
                       ),
                     ),
+
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        'Destacar em "Popular" na Home',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: const Text(
+                        'Exibe esta planta no card superior de plantas populares',
+                      ),
+                      value: _isPopular,
+                      onChanged: (val) => setState(() => _isPopular = val),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Principais Aspectos Manuais (Formas de Uso / Partes)',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'As pílulas de Áudio, Modelo 3D, Artigos Científicos, Científico, Resumo e Visitação são adicionadas automaticamente quando seus respectivos campos estão preenchidos.',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 6,
+                            children: _kOpcoesAspectos.map((aspecto) {
+                              final selected = _selectedAspectos.contains(aspecto);
+                              return FilterChip(
+                                label: Text(aspecto),
+                                selected: selected,
+                                onSelected: (val) {
+                                  setState(() {
+                                    if (val) {
+                                      _selectedAspectos.add(aspecto);
+                                    } else {
+                                      _selectedAspectos.remove(aspecto);
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
 
                     // CAMPO DE UPLOAD DE IMAGEM 2D
                     TextFormField(
@@ -649,7 +806,11 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                       Text('Cuidado #${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => setState(() => _cuidadosForm.removeAt(index)),
+                        onPressed: () {
+                          _cuidadosForm[index].descricaoCtrl.dispose();
+                          _cuidadosForm[index].doseCtrl.dispose();
+                          setState(() => _cuidadosForm.removeAt(index));
+                        },
                       ),
                     ],
                   ),
@@ -716,7 +877,17 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                       Text('Local #${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => setState(() => _locaisForm.removeAt(index)),
+                        onPressed: () {
+                          _locaisForm[index].nomeCtrl.dispose();
+                          _locaisForm[index].enderecoCtrl.dispose();
+                          _locaisForm[index].avaliacaoCtrl.dispose();
+                          for (var r in _locaisForm[index].reviews) {
+                            r.autorCtrl.dispose();
+                            r.textoCtrl.dispose();
+                            r.notaCtrl.dispose();
+                          }
+                          setState(() => _locaisForm.removeAt(index));
+                        },
                       ),
                     ],
                   ),
@@ -755,7 +926,12 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
                               Text('Review #${revIndex + 1}', style: const TextStyle(fontSize: 12)),
                               IconButton(
                                 icon: const Icon(Icons.close, size: 18),
-                                onPressed: () => setState(() => form.reviews.removeAt(revIndex)),
+                                onPressed: () {
+                                  form.reviews[revIndex].autorCtrl.dispose();
+                                  form.reviews[revIndex].textoCtrl.dispose();
+                                  form.reviews[revIndex].notaCtrl.dispose();
+                                  setState(() => form.reviews.removeAt(revIndex));
+                                },
                               ),
                             ],
                           ),

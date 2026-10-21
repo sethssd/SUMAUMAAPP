@@ -5,16 +5,24 @@ import '../screens/detail_screen.dart';
 class PlantSearchDelegate extends SearchDelegate {
   // Mantemos o cache em memória das plantas para poder filtrar localmente rápido sem onerar o Firestore.
   static Future<List<QueryDocumentSnapshot>>? _cachedPlantsFuture;
+  static DateTime? _lastCacheTime;
 
   PlantSearchDelegate() {
-    _cachedPlantsFuture ??= FirebaseFirestore.instance
-        .collection('plantas')
-        .get()
-        .then((snap) => snap.docs.where((doc) {
-              final data = doc.data() as Map<String, dynamic>?;
-              if (data == null) return false;
-              return data['excluida'] != true;
-            }).toList());
+    if (_lastCacheTime != null && DateTime.now().difference(_lastCacheTime!) > const Duration(minutes: 5)) {
+      _cachedPlantsFuture = null;
+    }
+
+    if (_cachedPlantsFuture == null) {
+      _lastCacheTime = DateTime.now();
+      _cachedPlantsFuture = FirebaseFirestore.instance
+          .collection('plantas')
+          .get()
+          .then((snap) => snap.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>?;
+                if (data == null) return false;
+                return data['excluida'] != true;
+              }).toList());
+    }
   }
 
   @override

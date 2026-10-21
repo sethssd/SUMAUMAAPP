@@ -112,35 +112,37 @@ class _DetailScreenState extends State<DetailScreen>
       body: Column(
         children: [
           Expanded(
-            child: CustomScrollView(slivers: [
-              SliverAppBar(
-                expandedHeight: 380,
-                pinned: true,
-                backgroundColor: Colors.transparent,
-                automaticallyImplyLeading: false,
-                elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: DetailHeroHeader(plant: plant),
-                ),
+            child: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  SliverAppBar(
+                    expandedHeight: 380,
+                    pinned: true,
+                    backgroundColor: Colors.transparent,
+                    automaticallyImplyLeading: false,
+                    elevation: 0,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: DetailHeroHeader(plant: plant),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Column(children: [
+                      const SizedBox(height: 20),
+                      _buildPremiumTabBar(isDark),
+                      const SizedBox(height: 8),
+                    ]),
+                  ),
+                ];
+              },
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  GeralTab(plant: plant),
+                  CientificoTab(plant: plant),
+                  ReferenciasTab(plant: plant),
+                ],
               ),
-              SliverToBoxAdapter(
-                child: Column(children: [
-                  const SizedBox(height: 20),
-                  _buildPremiumTabBar(isDark),
-                  const SizedBox(height: 8),
-                ]),
-              ),
-              SliverFillRemaining(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    GeralTab(plant: plant),
-                    CientificoTab(plant: plant),
-                    ReferenciasTab(plant: plant),
-                  ],
-                ),
-              ),
-            ]),
+            ),
           ),
           if (plant.modelo3dUrl.isNotEmpty || (plant.audioDescricaoUrl?.isNotEmpty ?? false))
             SafeArea(

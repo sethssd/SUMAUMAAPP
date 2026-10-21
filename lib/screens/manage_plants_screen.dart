@@ -19,10 +19,26 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
   // Armazena o cargo do usuário atual (carregado do documento 'users/<uid>')
   String _userRole = AppConstants.statusCarregando;
 
+  int _limit = 20;
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
     _loadUserRole();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        setState(() {
+          _limit += 20;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   // Carrega o cargo do usuário logado a partir do Firestore.
@@ -113,57 +129,48 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
         onPressed: () => _navigateToEditScreen(context, plantaId: null),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection(AppConstants.collectionPlants)
-            .snapshots(),
+        stream: () {
+          Query query = FirebaseFirestore.instance.collection(AppConstants.collectionPlants).where('excluida', isNotEqualTo: true);
+          if (_userRole == AppConstants.roleEscritor && currentUserId != null) {
+            query = query.where(AppConstants.fieldCreatorId, isEqualTo: currentUserId);
+          }
+          return query.orderBy('excluida').orderBy('dataCriacao', descending: true).limit(_limit).snapshots();
+        }(),
         builder: (context, snapshot) {
-          // ... (código de loading, erro, e lista vazia continua igual) ...
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            debugPrint('Erro ao carregar plantas: ${snapshot.error}');
+            debugPrint('Erro ao carregar plantas: \${snapshot.error}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.error_outline, color: Colors.red, size: 48),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Erro ao carregar plantas.',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
+                  const Text('Erro ao carregar plantas.', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
-                  Text(
-                    '${snapshot.error}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
+                  Text('\${snapshot.error}', style: const TextStyle(fontSize: 12, color: Colors.grey), textAlign: TextAlign.center),
                 ],
               ),
             );
           }
-          final plantas = snapshot.data!.docs.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final bool isNotDeleted = data['excluida'] != true;
 
-            // Se for escritor, vê apenas o que criou
-            if (_userRole == AppConstants.roleEscritor) {
-              return isNotDeleted &&
-                  data[AppConstants.fieldCreatorId] == currentUserId;
-            }
-
-            // Se for admin ou super_admin, vê tudo que não está excluído
-            return isNotDeleted;
-          }).toList();
+          final plantas = snapshot.data?.docs ?? [];
 
           if (plantas.isEmpty) {
             return const Center(child: Text('Nenhuma planta cadastrada.'));
           }
 
           return ListView.builder(
-            itemCount: plantas.length,
+            controller: _scrollController,
+            itemCount: plantas.length + 1,
             itemBuilder: (context, index) {
+              if (index == plantas.length) {
+                return plantas.length >= _limit 
+                    ? const Padding(padding: EdgeInsets.all(16.0), child: Center(child: CircularProgressIndicator()))
+                    : const SizedBox.shrink();
+              }
               final planta = plantas[index];
               final data = planta.data() as Map<String, dynamic>;
               final String nome =
