@@ -88,6 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onCatalogScroll() {
+    if (!_catalogScrollController.hasClients) return;
     if (_catalogScrollController.position.pixels >=
         _catalogScrollController.position.maxScrollExtent - 300) {
       if (!_isLoadingMore && _hasMore) {
@@ -720,6 +721,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return CustomScrollView(
       controller: _catalogScrollController,
+      primary: false,
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
