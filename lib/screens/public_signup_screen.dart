@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../services/auth_service.dart';
+import 'public_login_screen.dart';
 
 /// Tela de cadastro público do Sumaúma Biodata.
 /// Campos: Primeiro Nome, Sobrenome, E-mail, Senha, Confirmar Senha.
@@ -150,23 +152,39 @@ class _PublicSignUpScreenState extends State<PublicSignUpScreen>
       backgroundColor: const Color(0xFF2B3A30),
       body: Stack(
         children: [
-          // ── Background Watermark ──────────────────────────────
+          // ── Background Watermark (SVG com transição Hero) ─────
           Positioned.fill(
-            child: Opacity(
-              opacity: 0.08,
-              child: Image.asset(
-                'icons/ico-branco.png',
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
+            child: IgnorePointer(
+              child: Hero(
+                tag: 'sumauma-hero-logo',
+                createRectTween: (begin, end) => RectTween(begin: begin, end: end),
+                flightShuttleBuilder: sumaumaHeroFlightBuilder,
+                child: Opacity(
+                  opacity: 0.08,
+                  child: SvgPicture.asset(
+                    'icons/sumauma_logo.svg',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.center,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
-          
+
           // ── Conteúdo Principal ────────────────────────────────
           SafeArea(
             child: FadeTransition(
               opacity: _fadeAnim,
-              child: SingleChildScrollView(
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.04),
+                  end: Offset.zero,
+                ).animate(_fadeAnim),
+                child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
                 child: Form(
                   key: _formKey,
@@ -353,6 +371,7 @@ class _PublicSignUpScreenState extends State<PublicSignUpScreen>
                     ],
                   ),
                 ),
+              ),
               ),
             ),
           ),

@@ -4,140 +4,963 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SUMAÚMA — Painel Super Admin</title>
-  <link rel="icon" type="image/png" href="/icons/ico-branco.png" />
+  <title>SUMAÚMA — Central Editorial e Administração</title>
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon-sumauma.svg?v=4" />
+  <link rel="alternate icon" type="image/png" href="/favicon.png?v=4" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/shared.css" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="/config.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared.css?v=3" />
+  <link rel="stylesheet" href="/admin/style.css?v=3" />
+  <script src="/config.js?v=3"></script>
 </head>
 
 <body>
 
-  <!-- LOADING -->
-  <div id="loading">
-    <div class="spinner-lg"></div>
-    <p style="color:var(--text-dim);font-size:14px;">A verificar autenticação…</p>
+  <!-- LOGO OFICIAL SUMAUMA EM SVG -->
+  <svg style="display:none;" aria-hidden="true">
+    <defs>
+      <symbol id="icon-sumauma" viewBox="0 0 1080 877">
+        <path d="M 524.500 10.635 C 495.253 15.315, 469.793 23.610, 452.059 34.238 L 443.500 39.367 426 40.138 C 416.375 40.562, 396.125 40.890, 381 40.866 C 363.968 40.840, 351.629 41.253, 348.584 41.953 C 342.133 43.436, 324.548 52.510, 319.782 56.816 C 317.717 58.682, 313.930 63.199, 311.366 66.854 C 305.120 75.761, 300.320 80.734, 295.500 83.292 C 291.630 85.346, 290.252 85.417, 253 85.480 C 220.590 85.536, 213.103 85.823, 205.667 87.293 C 185.695 91.242, 170.585 99.417, 154.613 114.914 C 141.313 127.819, 133.460 138.148, 126.943 151.309 C 121.395 162.515, 120.864 165.618, 124.275 166.914 C 125.526 167.390, 151.882 168.115, 182.844 168.525 L 239.137 169.270 245.386 178.885 C 248.823 184.173, 253.256 189.916, 255.236 191.647 C 260.616 196.351, 277.653 202.115, 281.646 200.582 C 283.963 199.693, 282.682 195.907, 276.735 186.061 C 271.846 177.967, 269.138 172.020, 269.044 169.171 C 269.009 168.114, 271.685 167.909, 282.083 168.171 C 293.656 168.462, 295.329 168.724, 296.582 170.440 C 298.016 172.405, 298.897 174.560, 306.516 194.749 C 308.851 200.936, 311.966 207.578, 313.439 209.508 C 316.113 213.015, 322.524 217, 325.490 217 C 326.354 217, 329.733 218.125, 333 219.500 C 340.284 222.566, 340.944 222.588, 340.311 219.750 C 339.558 216.377, 331.323 189.369, 328.953 182.500 C 327.815 179.200, 326.256 174.588, 325.490 172.250 L 324.096 168 336.955 168 L 349.815 168 350.333 173.250 C 350.618 176.137, 351.339 185.250, 351.934 193.500 C 352.530 201.750, 353.517 215.025, 354.128 223 C 356.281 251.098, 356.298 252, 354.689 252 C 352.716 252, 328.708 244.091, 317.500 239.748 C 307.543 235.890, 274.517 224.738, 260.514 220.505 C 242.994 215.208, 234.587 209.801, 227.972 199.573 C 220.996 188.785, 227.523 189.698, 156.544 189.592 C 95.771 189.502, 94.223 189.548, 81 191.842 C 65.314 194.564, 49.940 200.489, 41.335 207.128 C 32.085 214.264, 16.674 231.108, 12.579 238.558 C 6.333 249.920, 0.803 267.873, 0.227 278.658 C -0.560 293.368, 0.843 296, 9.472 296 C 12.403 296, 20.066 295.100, 26.500 294 C 36.485 292.293, 42.765 292, 69.378 292 L 100.558 292 106.602 298.250 C 109.927 301.688, 119.347 312.600, 127.535 322.500 C 135.723 332.400, 145.493 344.204, 149.245 348.731 C 155.487 356.261, 166.174 365.390, 175 370.730 C 183.871 376.099, 196.234 380.046, 208.770 381.512 C 215.564 382.307, 221.528 383.208, 222.025 383.516 C 222.522 383.823, 264.232 384.443, 314.714 384.893 L 406.500 385.712 418.361 391.424 C 428.802 396.451, 431.209 398.115, 438.459 405.318 C 447.104 413.905, 454.030 424.394, 457.221 433.726 C 460.080 442.087, 461.313 465.807, 460.587 498.480 C 460.233 514.418, 459.527 530.393, 459.018 533.980 C 458.509 537.566, 457.591 557.375, 456.977 578 C 456.364 598.625, 455.219 622.025, 454.433 630 C 453.647 637.975, 453.003 646.712, 453.002 649.416 C 453 653.259, 451.931 656.533, 448.103 664.416 C 445.410 669.962, 442.053 677.257, 440.643 680.626 C 439.233 683.995, 437.133 688.355, 435.977 690.315 C 434.820 692.275, 432.370 697.394, 430.532 701.689 C 425.372 713.752, 403.079 762.191, 402.126 763.413 C 401.660 764.011, 399.370 769.225, 397.036 775 C 391.395 788.961, 390.021 791.021, 383.258 795.660 C 362.301 810.031, 345.698 821.346, 337.730 826.687 C 332.654 830.090, 322.425 837.191, 315 842.468 C 307.575 847.744, 297.390 854.784, 292.367 858.112 L 283.235 864.163 254.117 864.736 L 225 865.308 224.986 868.904 C 224.979 870.882, 224.701 873.513, 224.370 874.750 L 223.767 877 330.670 877 L 437.574 877 441.537 870.403 C 443.717 866.774, 446.588 861.936, 447.918 859.653 C 449.248 857.369, 453.017 851.225, 456.294 846 C 459.570 840.775, 463.050 835.150, 464.026 833.500 C 482.655 802.019, 486.593 793.021, 488.091 778.517 C 488.658 773.026, 489.581 743.776, 490.141 713.517 C 490.702 683.258, 491.379 653.888, 491.647 648.250 L 492.133 638 502.566 638 L 513 638 512.921 669.750 C 512.811 713.369, 510.284 783.930, 508.438 794.893 C 507.324 801.510, 499.197 819.133, 491.557 831.500 C 483.001 845.349, 473.441 861.499, 468.621 870.250 L 464.902 877 542.533 877 L 620.163 877 617.921 873.250 C 616.688 871.188, 611.760 863.200, 606.969 855.500 C 593.549 833.926, 587.408 820.527, 581.439 799.786 C 574.189 774.600, 573.035 764.999, 571.486 717 C 569.547 656.886, 567.773 453.588, 569.070 440 C 571.272 416.929, 576.065 402.600, 587.524 384.836 C 596.576 370.803, 620.954 349.689, 634 344.583 C 636.475 343.614, 638.950 342.452, 639.500 341.999 C 640.050 341.547, 647.925 338.411, 657 335.031 C 696.321 320.383, 698.592 319.253, 707.611 309.836 C 714.419 302.727, 718.368 296.664, 720.529 290 C 723.790 279.945, 724.262 278.930, 726.146 277.922 C 731.909 274.837, 772.301 259.336, 784.362 255.580 C 799.048 251.006, 802.407 249.809, 825.204 241.029 C 832.742 238.126, 839.604 236.018, 840.454 236.344 C 842.295 237.050, 842.345 240.333, 840.685 251.398 L 839.500 259.296 829.081 262.898 C 816.597 267.213, 815.841 268.041, 811.970 281.637 C 808.780 292.838, 803.999 306.122, 801.142 311.721 C 799.277 315.377, 796.363 318.150, 783.500 328.508 C 780.200 331.166, 773.675 336.794, 769 341.015 C 764.325 345.237, 758.250 350.400, 755.500 352.489 L 750.500 356.287 709.120 355.732 C 663.275 355.117, 662.490 355.193, 650.251 361.396 C 635.061 369.094, 615.336 385.968, 605.944 399.296 C 598.652 409.645, 592.816 427.334, 591.030 444.500 C 590.572 448.900, 590.581 464.111, 591.049 478.303 C 591.518 492.495, 592.392 551.220, 592.993 608.803 C 594.506 753.765, 595.646 781.693, 600.583 794.824 C 603.988 803.879, 612.906 820.529, 623.708 838 C 635.880 857.687, 638.097 861.379, 642.626 869.500 L 646.529 876.500 749.812 876.755 L 853.096 877.009 852.798 870.755 L 852.500 864.500 824.500 864 L 796.500 863.500 791.500 860.600 C 788.750 859.005, 780.425 853.336, 773 848.002 C 765.575 842.669, 752.975 833.990, 745 828.717 C 737.025 823.443, 728.925 818.031, 727 816.689 C 725.075 815.347, 717.425 810.085, 710 804.996 C 702.575 799.907, 694.996 794.338, 693.158 792.621 C 689.902 789.581, 683.841 778.734, 680.082 769.218 C 679.056 766.623, 674.388 756.625, 669.708 747 C 665.028 737.375, 657.547 721.509, 653.084 711.742 C 648.621 701.976, 640.661 685.101, 635.394 674.242 L 625.818 654.500 624.958 641 C 624.485 633.575, 624.061 621.650, 624.016 614.500 C 623.971 607.350, 623.510 598.350, 622.990 594.500 C 622.471 590.650, 621.588 575.125, 621.029 560 C 620.470 544.875, 619.225 526.650, 618.263 519.500 C 616.950 509.745, 616.512 499.510, 616.507 478.500 C 616.501 452.792, 616.683 449.783, 618.734 441.739 C 622.657 426.352, 631.497 412.107, 643.500 401.830 C 653.939 392.892, 663.109 388.818, 680.555 385.369 C 687.641 383.968, 694.072 383.629, 711.500 383.737 C 723.600 383.812, 762.642 383.939, 798.260 384.018 L 863.019 384.163 875.562 381.024 C 893.680 376.488, 900.087 373.414, 913.811 362.671 C 919.677 358.079, 931.353 345.359, 942 331.963 C 949.527 322.492, 971.585 296.644, 974.175 294.259 L 976.609 292.019 1027.054 291.759 L 1077.500 291.500 1077.243 281.123 C 1076.779 262.419, 1069.714 242.200, 1059.300 229.773 C 1040.555 207.404, 1005.904 194.020, 961.500 191.994 C 951.050 191.518, 934.400 190.600, 924.500 189.955 C 914.600 189.310, 895.873 188.965, 882.885 189.188 C 856.342 189.643, 855.160 189.940, 852.936 196.715 C 851.467 201.187, 848.015 206.852, 845.380 209.112 C 843.414 210.799, 813.441 222.235, 792 229.479 C 779.007 233.870, 758.275 241.275, 739.693 248.164 C 733.750 250.368, 728.194 251.905, 727.347 251.580 C 726.125 251.111, 725.925 249.907, 726.376 245.744 C 726.688 242.860, 727.424 228.800, 728.010 214.500 C 728.597 200.200, 729.398 184, 729.789 178.500 L 730.500 168.500 742.250 168.218 L 754 167.937 754 171.511 C 754 175.825, 746.828 198.341, 743.014 206 C 739.213 213.633, 737.737 218.596, 738.528 221.089 C 739.086 222.848, 739.728 223.104, 742.288 222.592 C 751.349 220.780, 761.107 213.851, 767.324 204.814 C 770.209 200.619, 777.612 183.320, 782.329 169.750 C 782.868 168.200, 784.480 168, 796.469 168 C 806.627 168, 810 168.312, 809.999 169.250 C 809.999 169.938, 808.600 173.425, 806.891 177 C 802.165 186.887, 797 199.283, 797 200.739 C 797 202.362, 799.385 201.815, 811.800 197.347 C 826.992 191.879, 829.275 190.179, 833.094 181.488 C 834.299 178.744, 836.592 174.588, 838.190 172.250 L 841.096 168 875.771 168 C 894.843 168, 917.659 168.484, 926.473 169.077 C 940.113 169.993, 943.611 169.920, 949.963 168.586 C 954.073 167.723, 958.250 166.194, 959.261 165.184 C 961.041 163.403, 960.965 163.066, 956.715 153.924 C 951.466 142.632, 940.123 127.937, 925.764 113.829 C 914.522 102.783, 904.974 96.415, 893.077 92.028 C 879.252 86.931, 871.360 86.086, 827.611 85.019 C 805.550 84.481, 787.401 84.032, 787.281 84.021 C 787.160 84.009, 785.424 81.413, 783.422 78.250 C 779.097 71.416, 762.647 55.050, 756.458 51.422 C 754.050 50.011, 748.350 47.224, 743.790 45.229 L 735.500 41.601 690 41.027 C 641.533 40.415, 640.680 40.328, 633.184 35.210 C 618.821 25.403, 591.799 16.314, 565.744 12.526 C 554.696 10.920, 529.843 9.780, 524.500 10.635 M 378.388 182.250 C 378.726 190.088, 379.415 211.125, 379.919 229 C 380.864 262.530, 381.706 269.683, 385.799 279 C 391.136 291.148, 399.124 297.376, 417.409 303.647 C 438.530 310.890, 451.298 315.631, 458.388 318.861 C 464.988 321.869, 468 322.670, 468 321.418 C 468 321.098, 466.484 318.961, 464.632 316.668 C 462.780 314.376, 460.682 311.375, 459.970 310 C 459.258 308.625, 451.022 296.475, 441.669 283 C 423.807 257.266, 418.234 247.086, 415.641 235.459 C 414.414 229.956, 412.198 189.278, 412.007 168.750 C 412.003 168.338, 404.299 168, 394.887 168 L 377.773 168 378.388 182.250 M 441.016 186.750 C 441.047 223.550, 443.515 237.484, 452.357 250.784 C 459.007 260.788, 459.577 261.123, 462.817 256.937 C 464.281 255.047, 470.360 248.352, 476.326 242.059 C 492.006 225.522, 496.754 218.911, 497.479 212.606 C 498.260 205.808, 498.556 193.019, 498.250 179.250 L 498 168 469.500 168 L 441 168 441.016 186.750 M 527.401 168.765 C 526.692 169.240, 526.081 177.294, 525.676 191.500 C 524.720 225.112, 522.490 231.723, 506.171 249.335 C 500.990 254.926, 492.099 264.987, 486.413 271.694 L 476.073 283.888 479.474 288.694 C 481.344 291.337, 486.710 299.125, 491.399 306 C 496.088 312.875, 503.507 323.675, 507.886 330 C 512.264 336.325, 521.087 349.220, 527.491 358.656 C 533.895 368.092, 540.049 376.639, 541.166 377.651 C 543.154 379.450, 543.250 379.425, 545.590 376.495 C 551.092 369.606, 571.977 339.108, 574.405 334.418 C 580.271 323.080, 580.328 322.248, 580.734 241.750 L 581.106 168 554.803 168.015 C 540.336 168.024, 528.006 168.361, 527.401 168.765 M 609.070 202.750 C 609.109 221.863, 609.522 238.400, 609.988 239.500 C 610.740 241.274, 612.114 240.200, 622.168 229.975 C 628.401 223.636, 635.211 215.948, 637.303 212.890 C 642.161 205.786, 643.248 199.009, 642.379 181.250 L 641.730 168 625.365 168 L 609 168 609.070 202.750 M 672.119 168.905 C 671.089 169.558, 670.531 174.116, 669.922 186.847 C 669.474 196.234, 668.793 205.621, 668.409 207.707 C 667.336 213.540, 660.189 227.830, 656.058 232.403 C 651.671 237.258, 642.041 249.458, 639.800 253 C 638.930 254.375, 631.717 262.250, 623.771 270.500 L 609.324 285.500 608.675 305.750 C 608.155 322.006, 608.282 326, 609.323 326 C 610.037 326, 613.843 324.412, 617.782 322.472 C 626.013 318.417, 641.588 312.049, 661 304.802 C 683.551 296.383, 691.038 291.766, 695.124 283.758 C 698.043 278.036, 699.788 260.184, 701.455 219 C 702.246 199.475, 703.080 180.490, 703.308 176.812 C 703.554 172.857, 703.290 169.690, 702.662 169.062 C 701.369 167.769, 674.134 167.629, 672.119 168.905 M 878.137 259.250 C 868.280 274.238, 859.071 287.738, 857.671 289.250 C 855.240 291.878, 854.707 292, 845.641 292 L 836.155 292 835.123 295.250 C 834.556 297.038, 833.156 302.233, 832.013 306.796 C 828.405 321.193, 826.198 324.929, 813.788 337.637 C 807.580 343.995, 801.263 349.839, 799.750 350.624 C 796.419 352.353, 796.188 354.549, 799.250 355.370 C 800.487 355.701, 815.556 355.979, 832.735 355.986 C 863.192 356, 864.187 355.937, 872.688 353.474 C 877.482 352.084, 882.777 350.076, 884.453 349.011 C 886.129 347.946, 889.721 345.882, 892.436 344.426 C 898.934 340.940, 919.704 319.663, 928.484 307.500 C 930.072 305.300, 933.600 301.173, 936.323 298.329 C 939.266 295.256, 941.052 292.578, 940.726 291.727 C 939.907 289.593, 933.086 289, 909.360 289 C 897.612 289, 888 288.811, 888 288.579 C 888 287.846, 898.130 271.690, 901.530 267 C 906.755 259.794, 915 245.980, 915 244.434 C 915 242.542, 900.657 232, 898.083 232 C 896.539 232, 891.808 238.463, 878.137 259.250 M 173 235.132 C 168.730 237.723, 163.992 242.530, 164.022 244.241 C 164.069 246.958, 168.166 254.236, 179.352 271.475 C 189.214 286.674, 190.744 289.548, 189.258 290.083 C 188.291 290.430, 176.257 291.034, 162.516 291.424 C 148.776 291.815, 137.371 292.296, 137.172 292.494 C 136.625 293.042, 162.121 322.307, 171.891 332.344 C 181.803 342.527, 185.143 344.886, 195.446 348.979 C 210.569 354.986, 219.913 356.121, 251.538 355.793 C 267.102 355.632, 280.211 355.124, 280.668 354.664 C 281.126 354.204, 279.700 352.419, 277.500 350.698 C 269.436 344.389, 256.414 330.984, 253.325 325.813 C 251.460 322.690, 248.839 315.555, 246.968 308.500 C 245.216 301.900, 243.171 295.311, 242.422 293.858 C 240.587 290.298, 236.308 289, 226.405 289 C 217.308 289, 218.076 289.490, 213.855 281 C 213.171 279.625, 209.854 274.450, 206.484 269.500 C 203.114 264.550, 196.386 254.650, 191.534 247.500 C 186.682 240.350, 182.214 234.169, 181.606 233.765 C 179.652 232.467, 176.589 232.953, 173 235.132 M 237.435 238.250 C 237.695 239.488, 238.418 243.875, 239.043 248 C 240.721 259.085, 241.035 259.577, 247.658 261.503 C 262.259 265.748, 264.033 267.843, 267.555 285 C 270.572 299.694, 272.057 303.423, 278.508 312.500 C 288.167 326.092, 315.360 348.038, 329.609 353.742 L 336.500 356.500 361.410 356.231 C 375.110 356.083, 394.235 356.390, 403.911 356.914 C 421.181 357.849, 421.682 357.940, 431.373 361.898 C 463.830 375.155, 483.358 397.671, 490.779 430.393 C 492.141 436.398, 492.399 445.269, 492.445 487.595 C 492.490 528.523, 492.751 537.993, 493.872 539.345 C 495.868 541.751, 512.133 541.751, 514.128 539.345 C 515.251 537.990, 515.493 528.700, 515.464 488.095 C 515.425 435.124, 514.973 429.039, 509.804 412 C 507.463 404.284, 499.319 388.516, 494.051 381.500 C 483.526 367.484, 464.432 351.987, 451.004 346.564 C 447.431 345.121, 442.814 342.819, 440.742 341.448 C 438.671 340.078, 429.895 336.550, 421.238 333.608 C 391.002 323.334, 381.026 318.271, 372.644 308.949 C 367.122 302.807, 362.046 295.483, 360.899 292 C 359.066 286.436, 356.411 279.431, 355.717 278.330 C 355.312 277.686, 349.247 275.261, 342.240 272.941 C 335.233 270.621, 327.778 267.859, 325.674 266.803 C 322.309 265.113, 310.698 260.962, 267.500 246.003 C 261.450 243.908, 252.757 240.800, 248.182 239.097 C 238.105 235.345, 236.803 235.243, 237.435 238.250 M 449.040 727.500 C 441.864 742.940, 433.842 760.585, 429.492 770.500 C 426.596 777.100, 422.109 787, 419.521 792.500 C 416.933 798, 412.792 807.202, 410.319 812.949 C 399.451 838.203, 394.851 844.532, 383.039 850.480 C 374.159 854.952, 364.717 861.732, 365.532 863.052 C 366.588 864.761, 399.617 864.211, 406.159 862.375 C 414.119 860.142, 417.066 856.914, 426.644 839.936 C 439.439 817.253, 439.085 818.250, 441.005 799.500 C 441.624 793.450, 443.461 779.725, 445.087 769 C 446.713 758.275, 448.285 747.700, 448.580 745.500 C 448.875 743.300, 449.581 739.250, 450.150 736.500 C 450.719 733.750, 451.016 729.925, 450.810 728 L 450.434 724.500 449.040 727.500 M 628.528 728.069 C 628.781 729.956, 629.707 736.450, 630.585 742.500 C 631.464 748.550, 632.772 758, 633.494 763.500 C 634.215 769, 635.069 774.175, 635.391 775 C 635.714 775.825, 636.645 782.800, 637.460 790.500 C 639.725 811.890, 640.966 816.358, 648.779 831.245 C 661.544 855.569, 665.178 861.284, 668.500 862.257 C 670.150 862.740, 681.063 863.393, 692.750 863.708 C 711.743 864.220, 714 864.112, 714 862.691 C 714 860.659, 709.561 857.342, 699.505 851.859 C 686.448 844.741, 682.817 840.321, 673.330 820 C 668.836 810.375, 662.854 797.325, 660.036 791 C 657.218 784.675, 653.192 776.575, 651.091 773 C 648.989 769.425, 646.698 764.700, 646 762.500 C 644.078 756.443, 631.017 727.701, 629.446 726.069 C 628.266 724.845, 628.134 725.135, 628.528 728.069" stroke="none" fill="currentColor" fill-rule="evenodd"/>
+      </symbol>
+    </defs>
+  </svg>
+
+
+  <!-- ESTADO DE CARREGAMENTO -->
+  <div id="loading" role="status" aria-live="polite">
+    <div class="spinner-lg" aria-hidden="true"></div>
+    <p style="color:var(--text-secondary);font-size:14px;">Verificando sessão e permissões...</p>
   </div>
 
-  <!-- LOGIN -->
+  <!-- TELA ÚNICA DE LOGIN -->
   <div id="login-screen">
-    <div class="login-card">
-      <img src="/icons/ico-branco.png" alt="SUMAÚMA" />
-      <h1>SUMAÚMA</h1>
-      <p>Painel Super Admin — acesso restrito</p>
-      <div class="login-error" id="login-error"></div>
-      <div class="field"><label>E-mail</label><input type="email" id="in-email" placeholder="admin@sumauma.com" /></div>
-      <div class="field"><label>Senha</label><input type="password" id="in-pass" placeholder="••••••••" /></div>
-      <button class="btn-primary-login" id="btn-login" onclick="doLogin()">Entrar</button>
+    <div class="login-card" role="region" aria-labelledby="login-heading">
+      <div class="login-brand">
+        <div class="login-brand-icon" aria-hidden="true">
+          <svg class="brand-svg" width="26" height="22" viewBox="0 0 1080 877">
+            <use href="#icon-sumauma"></use>
+          </svg>
+        </div>
+        <div>
+          <h1 id="login-heading">SUMAÚMA</h1>
+        </div>
+      </div>
+      <p class="login-subtitle">Central Editorial de Plantas, Postagens e Gestão</p>
+
+      <div class="login-error" id="login-error" role="alert"></div>
+
+      <div class="field-group" style="margin-top:0;">
+        <label class="field-label" for="in-email">E-mail</label>
+        <input type="email" id="in-email" placeholder="seu.email@instituicao.br" autocomplete="email" />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="in-pass">Senha</label>
+        <input type="password" id="in-pass" placeholder="Sua senha de acesso" autocomplete="current-password" />
+      </div>
+
+      <button type="button" class="btn btn-primary w-full" id="btn-login" style="margin-top:22px;padding:12px;" onclick="doLogin()">
+        <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+          <polyline points="10 17 15 12 10 7" />
+          <line x1="15" y1="12" x2="3" y2="12" />
+        </svg>
+        <span id="login-btn-text">Entrar no Painel</span>
+      </button>
     </div>
   </div>
 
-  <!-- APP -->
+  <!-- APLICAÇÃO UNIFICADA -->
   <div id="app-screen">
-    <header>
-      <div class="header-left">
-        <img src="/icons/ico-branco.png" alt="" />
-        <span>SUMAÚMA</span>
-        <span class="badge">Super Admin</span>
-      </div>
-      <div class="header-right">
-        <span class="user-email" id="header-email"></span>
-        <button class="btn btn-outline btn-sm" onclick="doLogout()">Sair</button>
+
+    <!-- CABEÇALHO -->
+    <header class="top-header">
+      <div class="top-header-inner">
+        <div class="brand-wrap">
+          <div class="brand-mark" aria-hidden="true">
+            <svg class="brand-svg" width="22" height="18" viewBox="0 0 1080 877">
+              <use href="#icon-sumauma"></use>
+            </svg>
+          </div>
+          <span class="brand-title">SUMAÚMA</span>
+          <span id="header-role-badge" style="display:none;" aria-hidden="true"></span>
+        </div>
+
+        <div class="header-actions">
+          <span class="user-email" id="header-email"></span>
+          <button type="button" class="btn btn-outline btn-icon-only" id="btn-theme-toggle" onclick="toggleTheme()" aria-label="Alternar tema claro ou escuro" title="Alternar tema">
+            <svg class="icon-svg" id="theme-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          </button>
+          <button type="button" class="btn btn-outline btn-sm" onclick="doLogout()">
+            <svg class="icon-svg sm" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span>Sair</span>
+          </button>
+        </div>
       </div>
     </header>
 
-    <main>
-      <div class="tabs-nav">
-        <button class="tab-btn active" onclick="switchTab('tab-requests')">Solicitações</button>
-        <button class="tab-btn" onclick="switchTab('tab-users')">Usuários</button>
-        <button class="tab-btn" onclick="switchTab('tab-plants')">Plantas</button>
-      </div>
+    <main class="main-container">
 
-      <!-- TAB: REQUESTS -->
-      <div id="tab-requests" class="tab-content active">
-        <h2 style="margin-bottom:16px;">Pedidos de Acesso</h2>
+      <!-- BARRA DE ABAS -->
+      <nav class="tabs-nav" role="tablist" aria-label="Seções do painel">
+        <button type="button" class="tab-btn active" role="tab" aria-selected="true" data-tab="tab-plants" onclick="switchTab('tab-plants')">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 20h10" />
+            <path d="M10 20c5.5-2.5.8-6.4 3-10" />
+            <path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z" />
+            <path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z" />
+          </svg>
+          <span>Plantas</span>
+          <span class="tab-count" id="count-plants">0</span>
+        </button>
+
+        <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="tab-posts" onclick="switchTab('tab-posts')">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2" />
+            <path d="M18 14h-8" />
+            <path d="M15 18h-5" />
+            <path d="M10 6h8v4h-8V6Z" />
+          </svg>
+          <span>Postagens e Notícias</span>
+          <span class="tab-count" id="count-posts">0</span>
+        </button>
+
+        <button type="button" class="tab-btn admin-only-tab" role="tab" aria-selected="false" data-tab="tab-requests" onclick="switchTab('tab-requests')" style="display:none;">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <line x1="19" y1="8" x2="19" y2="14" />
+            <line x1="22" y1="11" x2="16" y2="11" />
+          </svg>
+          <span>Solicitações</span>
+          <span class="tab-count" id="count-requests">0</span>
+        </button>
+
+        <button type="button" class="tab-btn admin-only-tab" role="tab" aria-selected="false" data-tab="tab-users" onclick="switchTab('tab-users')" style="display:none;">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <span>Usuários</span>
+          <span class="tab-count" id="count-users">0</span>
+        </button>
+
+        <button type="button" class="tab-btn admin-only-tab" role="tab" aria-selected="false" data-tab="tab-suggestions" onclick="switchTab('tab-suggestions')" style="display:none;">
+          <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          <span>Sugestões</span>
+          <span class="tab-count" id="count-suggestions">0</span>
+        </button>
+      </nav>
+
+      <!-- ═══════════════════════════════════════════════════════
+           ABA 1: PLANTAS (LISTA + EDITOR UNIFICADO NA MESMA TELA)
+      ════════════════════════════════════════════════════════ -->
+      <section id="tab-plants" class="tab-content active" aria-label="Gestão de Plantas">
+
+        <!-- VISÃO A: LISTA DE PLANTAS -->
+        <div id="plants-list-view">
+          <div class="section-top">
+            <div class="section-top-title">
+              <h2>Catálogo de Plantas</h2>
+              <p>Gerencie fichas botânicas, arquivos 3D, áudios, mapas de visitação e artigos científicos em um só lugar.</p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="openPlantEditor(null)">
+              <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>Nova Planta</span>
+            </button>
+          </div>
+
+          <div class="toolbar">
+            <div class="search-wrap">
+              <svg class="icon-svg search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input type="text" id="search-plants" placeholder="Buscar por nome popular, científico ou palavra-chave..." aria-label="Buscar plantas" oninput="renderPlantsTable()" />
+            </div>
+
+            <select id="filter-plant-category" class="filter-select" aria-label="Filtrar por categoria" onchange="renderPlantsTable()">
+              <option value="">Todas as categorias</option>
+              <option value="Medicinais">Medicinais</option>
+              <option value="Frutíferas">Frutíferas</option>
+              <option value="Aromáticas">Aromáticas</option>
+              <option value="Madeireiras">Madeireiras</option>
+              <option value="Ornamentais">Ornamentais</option>
+              <option value="Alimentícias">Alimentícias</option>
+              <option value="Tóxicas">Tóxicas</option>
+              <option value="Aquáticas">Aquáticas</option>
+            </select>
+
+            <select id="filter-plant-status" class="filter-select" aria-label="Filtrar por status" onchange="renderPlantsTable()">
+              <option value="active">Ativas no App</option>
+              <option value="all">Todas (Ativas + Ocultas)</option>
+              <option value="hidden">Ocultas / Lixeira</option>
+              <option value="popular">Destaques Populares</option>
+              <option value="mine">Criadas por mim</option>
+            </select>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Planta</th>
+                  <th>Categoria</th>
+                  <th>Recursos</th>
+                  <th>Status</th>
+                  <th style="text-align:right;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="plants-tbody"></tbody>
+            </table>
+          </div>
+          <div id="empty-state-plants" class="empty-state" style="display:none;margin-top:12px;">
+            Nenhuma planta encontrada para os filtros selecionados.
+          </div>
+        </div>
+
+        <!-- VISÃO B: EDITOR COMPLETO DE PLANTA (INLINE) -->
+        <div id="plants-editor-view" style="display:none;">
+          <div class="editor-header-bar">
+            <div class="editor-header-left">
+              <button type="button" class="btn btn-outline btn-sm" onclick="closePlantEditor()">
+                <svg class="icon-svg sm" viewBox="0 0 24 24" aria-hidden="true">
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+                <span>Voltar ao catálogo</span>
+              </button>
+              <span class="editor-header-title" id="plant-editor-heading">Nova Planta</span>
+            </div>
+
+            <div class="progress-inline" aria-label="Progresso de preenchimento da ficha">
+              <span class="progress-inline-label">Ficha</span>
+              <div class="progress-track">
+                <div class="progress-fill" id="progress-fill"></div>
+              </div>
+              <span class="progress-pct" id="progress-pct">0%</span>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 1: IDENTIFICAÇÃO E CLASSIFICAÇÃO -->
+          <div class="section-card">
+            <button type="button" class="section-header" onclick="toggleSection(this)" aria-expanded="true">
+              <div class="section-header-left">
+                <div class="section-icon-box" aria-hidden="true">
+                  <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+                    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+                  </svg>
+                </div>
+                <div>
+                  <h3>1. Identificação e Filtros do Catálogo</h3>
+                  <p>Nome, classificação, pílulas de aspecto e palavras-chave de busca</p>
+                </div>
+              </div>
+              <svg class="icon-svg section-chevron open" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <div class="section-body open">
+              <div class="form-grid-3">
+                <div class="field-group">
+                  <label class="field-label" for="field-nome">
+                    <span>Nome Popular</span>
+                    <span class="required-tag">Obrigatório</span>
+                  </label>
+                  <input type="text" id="field-nome" placeholder="Ex: Açaí" oninput="updateProgress()" />
+                  <div class="error-text" id="err-nome">Informe o nome popular da planta.</div>
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="field-nomeCientifico">Nome Científico</label>
+                  <input type="text" id="field-nomeCientifico" placeholder="Ex: Euterpe oleracea" oninput="updateProgress()" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="field-categoria">Categoria Principal</label>
+                  <select id="field-categoria" onchange="updateProgress()">
+                    <option value="">Selecione uma categoria...</option>
+                    <option value="Medicinais">Medicinais</option>
+                    <option value="Frutíferas">Frutíferas</option>
+                    <option value="Aromáticas">Aromáticas</option>
+                    <option value="Madeireiras">Madeireiras</option>
+                    <option value="Ornamentais">Ornamentais</option>
+                    <option value="Alimentícias">Alimentícias</option>
+                    <option value="Tóxicas">Tóxicas</option>
+                    <option value="Aquáticas">Aquáticas</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="field-descricaoCurta">Descrição Curta (Resumo para listagem)</label>
+                <input type="text" id="field-descricaoCurta" placeholder="Resumo direto exibido nos cards da tela inicial e catálogo" oninput="updateProgress()" />
+              </div>
+
+              <label class="toggle-row" for="field-isPopular">
+                <div>
+                  <div class="toggle-info-title">Destacar em "Populares" na Tela Inicial</div>
+                  <div class="toggle-info-sub">Prioriza esta planta na fileira de plantas mais populares do aplicativo.</div>
+                </div>
+                <input type="checkbox" id="field-isPopular" class="toggle-input" />
+              </label>
+
+              <div class="field-group">
+                <label class="field-label">Formas de Uso e Partes Utilizadas (Pílulas de Filtro)</label>
+                <div class="helper-text" style="margin-top:0;margin-bottom:8px;">
+                  Selecione os aspectos aplicáveis. As pílulas de Áudio, Modelo 3D, Artigos, Ciência e Visitação são ativadas automaticamente quando seus respectivos campos são preenchidos.
+                </div>
+                <div class="selectable-chips-grid" id="aspectos-container" role="group" aria-label="Formas de uso e partes da planta"></div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="field-group">
+                  <label class="field-label" for="keyword-input">Palavras-chave de Busca</label>
+                  <div class="chips-list" id="chips-container"></div>
+                  <div class="chip-input-row">
+                    <input type="text" id="keyword-input" placeholder="Digite um termo e pressione Enter" />
+                    <button type="button" class="btn btn-outline" onclick="addChip()" aria-label="Adicionar palavra-chave">
+                      <svg class="icon-svg sm" viewBox="0 0 24 24" aria-hidden="true">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                      <span>Adicionar</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="beneficio-input">Benefícios Principais ("Para que serve?")</label>
+                  <div class="chips-list" id="beneficios-container"></div>
+                  <div class="chip-input-row">
+                    <input type="text" id="beneficio-input" placeholder="Ex: Auxilia na digestão, Anti-inflamatório..." />
+                    <button type="button" class="btn btn-outline" onclick="addBeneficio()" aria-label="Adicionar benefício">
+                      <svg class="icon-svg sm" viewBox="0 0 24 24" aria-hidden="true">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                      <span>Adicionar</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 2: MÍDIA E RECURSOS INTERATIVOS -->
+          <div class="section-card">
+            <button type="button" class="section-header" onclick="toggleSection(this)" aria-expanded="true">
+              <div class="section-header-left">
+                <div class="section-icon-box" aria-hidden="true">
+                  <svg class="icon-svg" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                </div>
+                <div>
+                  <h3>2. Mídia, Modelo 3D e Áudios</h3>
+                  <p>Envie arquivos diretamente para a nuvem ou informe a URL</p>
+                </div>
+              </div>
+              <svg class="icon-svg section-chevron open" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <div class="section-body open">
+              <div class="form-grid-2">
+                <!-- Foto de Capa -->
+                <div class="field-group">
+                  <label class="field-label" for="field-imagemUrl">Foto Principal (Capa)</label>
+                  <div class="upload-box" id="img-upload-zone" onclick="document.getElementById('img-input').click()" role="button" tabindex="0" aria-label="Enviar foto principal">
+                    <svg class="icon-svg xl upload-box-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div class="upload-box-title">Clique para selecionar a foto de capa</div>
+                    <div class="upload-box-sub">JPG, PNG ou WebP (máx. 10 MB)</div>
+                    <img class="upload-preview-img" id="img-preview" src="" alt="Pré-visualização da foto de capa" />
+                  </div>
+                  <input type="file" id="img-input" accept="image/*" style="display:none" onchange="handleImageSelect()" />
+                  <div class="upload-progress-wrap" id="img-progress-wrap">
+                    <div class="upload-progress-label"><span>Enviando imagem...</span><span id="img-pct">0%</span></div>
+                    <div class="upload-progress-track"><div class="upload-progress-fill" id="img-progress-fill"></div></div>
+                  </div>
+                  <input type="url" id="field-imagemUrl" placeholder="Ou cole a URL da imagem aqui..." style="margin-top:8px;" oninput="syncCoverPreviewFromInput()" />
+                </div>
+
+                <!-- Galeria Extra -->
+                <div class="field-group">
+                  <label class="field-label">Galeria de Fotos Extras</label>
+                  <div class="upload-box" id="extras-upload-zone" onclick="document.getElementById('extras-input').click()" role="button" tabindex="0" aria-label="Enviar fotos extras para a galeria">
+                    <svg class="icon-svg xl upload-box-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <line x1="12" y1="8" x2="12" y2="16" />
+                      <line x1="8" y1="12" x2="16" y2="12" />
+                    </svg>
+                    <div class="upload-box-title">Adicionar fotos secundárias</div>
+                    <div class="upload-box-sub">Selecione uma ou várias imagens para a galeria lateral</div>
+                  </div>
+                  <input type="file" id="extras-input" accept="image/*" multiple style="display:none" onchange="handleExtrasSelect()" />
+                  <div class="upload-progress-wrap" id="extras-progress-wrap">
+                    <div class="upload-progress-label"><span>Enviando galeria...</span><span id="extras-pct">0%</span></div>
+                    <div class="upload-progress-track"><div class="upload-progress-fill" id="extras-progress-fill"></div></div>
+                  </div>
+                  <div class="extras-gallery" id="extras-gallery"></div>
+                </div>
+              </div>
+
+              <!-- Modelo 3D, Podcast e Audiodescrição -->
+              <div class="form-grid-3" style="margin-top:20px;">
+                <div class="field-group">
+                  <label class="field-label" for="field-modelo3dUrl">Modelo 3D Interativo (.glb)</label>
+                  <div class="media-row-card">
+                    <div class="media-row-left">
+                      <div class="media-row-icon" aria-hidden="true">
+                        <svg class="icon-svg" viewBox="0 0 24 24">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                          <line x1="12" y1="22.08" x2="12" y2="12" />
+                        </svg>
+                      </div>
+                      <div class="media-row-info">
+                        <div class="media-row-name" id="model-name">Arquivo .GLB</div>
+                        <div class="media-row-sub" id="model-sub">Visualização 3D no app</div>
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('model-input').click()">Enviar</button>
+                  </div>
+                  <input type="file" id="model-input" accept=".glb,.gltf" style="display:none" onchange="handleModelSelect()" />
+                  <div class="upload-progress-wrap" id="model-progress-wrap">
+                    <div class="upload-progress-label"><span>Enviando 3D...</span><span id="model-pct">0%</span></div>
+                    <div class="upload-progress-track"><div class="upload-progress-fill" id="model-progress-fill"></div></div>
+                  </div>
+                  <input type="url" id="field-modelo3dUrl" placeholder="URL do arquivo .glb" style="margin-top:8px;" oninput="updateProgress()" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="field-audioUrl">Áudio do Podcast (.mp3)</label>
+                  <div class="media-row-card">
+                    <div class="media-row-left">
+                      <div class="media-row-icon" aria-hidden="true">
+                        <svg class="icon-svg" viewBox="0 0 24 24">
+                          <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                          <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+                        </svg>
+                      </div>
+                      <div class="media-row-info">
+                        <div class="media-row-name" id="audio-name">Podcast ("Papo de Feira")</div>
+                        <div class="media-row-sub" id="audio-sub">Player da aba Geral</div>
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('audio-input').click()">Enviar</button>
+                  </div>
+                  <input type="file" id="audio-input" accept=".mp3,audio/*" style="display:none" onchange="handleAudioSelect('audio')" />
+                  <div class="upload-progress-wrap" id="audio-progress-wrap">
+                    <div class="upload-progress-label"><span>Enviando áudio...</span><span id="audio-pct">0%</span></div>
+                    <div class="upload-progress-track"><div class="upload-progress-fill" id="audio-progress-fill"></div></div>
+                  </div>
+                  <input type="url" id="field-audioUrl" placeholder="URL do áudio .mp3" style="margin-top:8px;" oninput="updateProgress()" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="field-audioDescricaoUrl">Audiodescrição Acessível (.mp3)</label>
+                  <div class="media-row-card">
+                    <div class="media-row-left">
+                      <div class="media-row-icon" aria-hidden="true">
+                        <svg class="icon-svg" viewBox="0 0 24 24">
+                          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                          <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                          <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                        </svg>
+                      </div>
+                      <div class="media-row-info">
+                        <div class="media-row-name" id="audiodesc-name">Audiodescrição</div>
+                        <div class="media-row-sub" id="audiodesc-sub">Botão de acessibilidade</div>
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('audiodesc-input').click()">Enviar</button>
+                  </div>
+                  <input type="file" id="audiodesc-input" accept=".mp3,audio/*" style="display:none" onchange="handleAudioSelect('audiodesc')" />
+                  <div class="upload-progress-wrap" id="audiodesc-progress-wrap">
+                    <div class="upload-progress-label"><span>Enviando audiodescrição...</span><span id="audiodesc-pct">0%</span></div>
+                    <div class="upload-progress-track"><div class="upload-progress-fill" id="audiodesc-progress-fill"></div></div>
+                  </div>
+                  <input type="url" id="field-audioDescricaoUrl" placeholder="URL da audiodescrição .mp3" style="margin-top:8px;" oninput="updateProgress()" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 3: INFORMAÇÕES CIENTÍFICAS E BOTÂNICAS -->
+          <div class="section-card">
+            <button type="button" class="section-header" onclick="toggleSection(this)" aria-expanded="false">
+              <div class="section-header-left">
+                <div class="section-icon-box" aria-hidden="true">
+                  <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path d="M10 2v7.31" />
+                    <path d="M14 9.3V1.99" />
+                    <path d="M8.5 2h7" />
+                    <path d="M14 9.3a6.5 6.5 0 1 1-4 0" />
+                    <path d="M5.52 16h12.96" />
+                  </svg>
+                </div>
+                <div>
+                  <h3>3. Conteúdo Botânico e Científico</h3>
+                  <p>Descobertas científicas, morfologia, taxonomia, fenologia e farmacologia</p>
+                </div>
+              </div>
+              <svg class="icon-svg section-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <div class="section-body">
+              <div class="field-group">
+                <label class="field-label">O que a Ciência Descobriu? (Card de Destaque Científico)</label>
+                <div class="quill-wrap"><div id="editor-descobertasCientificas"></div></div>
+                <div class="helper-text">Resumo objetivo com citações exibido no card de destaque científico na aba Geral.</div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label">Descrição Morfológica e Geral</label>
+                <div class="quill-wrap"><div id="editor-descricao"></div></div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="field-group">
+                  <label class="field-label">Taxonomia e Nomes Populares</label>
+                  <div class="quill-wrap"><div id="editor-taxonomia"></div></div>
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label">Distribuição e Habitat</label>
+                  <div class="quill-wrap"><div id="editor-distribuicaoHabitat"></div></div>
+                </div>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="field-group">
+                  <label class="field-label">Fenologia (Floração e Frutificação)</label>
+                  <div class="quill-wrap"><div id="editor-fenologia"></div></div>
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label">Usos e Valor Econômico</label>
+                  <div class="quill-wrap"><div id="editor-usosEValorEconomico"></div></div>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label">Farmacologia e Compostos Bioativos</label>
+                <div class="quill-wrap"><div id="editor-farmacologia"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 4: SEGURANÇA, PREPARO E CUIDADOS AVANÇADOS -->
+          <div class="section-card">
+            <button type="button" class="section-header" onclick="toggleSection(this)" aria-expanded="false">
+              <div class="section-header-left">
+                <div class="section-icon-box" aria-hidden="true">
+                  <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3>4. Segurança, Preparo e Cuidados Avançados</h3>
+                  <p>Orientações de uso tradicional, contraindicações e alertas de dosagem por nível de risco</p>
+                </div>
+              </div>
+              <svg class="icon-svg section-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <div class="section-body">
+              <div class="form-grid-2">
+                <div class="field-group">
+                  <label class="field-label">Como Usar (Chás, Banhos e Preparos)</label>
+                  <div class="quill-wrap"><div id="editor-comoUsar"></div></div>
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label">Cuidados Gerais e Contraindicações</label>
+                  <div class="quill-wrap"><div id="editor-cuidados"></div></div>
+                </div>
+              </div>
+
+              <div class="field-group" style="margin-top:24px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                  <div>
+                    <label class="field-label" style="margin-bottom:2px;">Alertas Estruturados de Segurança (Cuidados Avançados)</label>
+                    <div class="helper-text" style="margin-top:0;">Exibidos com legenda de cores (Azul, Verde, Laranja ou Vermelho) e dose recomendada.</div>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="addCuidadoAvancado()">
+                    <svg class="icon-svg sm" viewBox="0 0 24 24" aria-hidden="true">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <span>Adicionar Cuidado</span>
+                  </button>
+                </div>
+                <div id="cuidados-avancados-container"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SEÇÃO 5: LOCAIS DE VISITAÇÃO E REFERÊNCIAS -->
+          <div class="section-card">
+            <button type="button" class="section-header" onclick="toggleSection(this)" aria-expanded="false">
+              <div class="section-header-left">
+                <div class="section-icon-box" aria-hidden="true">
+                  <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                </div>
+                <div>
+                  <h3>5. Locais de Visitação e Referências Bibliográficas</h3>
+                  <p>Onde encontrar a planta presencialmente e fontes científicas consultadas</p>
+                </div>
+              </div>
+              <svg class="icon-svg section-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            <div class="section-body">
+              <div class="field-group">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                  <div>
+                    <label class="field-label" style="margin-bottom:2px;">Locais de Visitação / Onde Encontrar</label>
+                    <div class="helper-text" style="margin-top:0;">Ativa automaticamente a pílula de Visitação e o card de endereços e avaliações.</div>
+                  </div>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="addLocalVisitacao()">
+                    <svg class="icon-svg sm" viewBox="0 0 24 24" aria-hidden="true">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <span>Adicionar Local</span>
+                  </button>
+                </div>
+                <div id="locais-container"></div>
+              </div>
+
+              <div class="form-grid-2" style="margin-top:24px;">
+                <div class="field-group">
+                  <label class="field-label" for="field-referenciasFarmacologicas">Referências Científicas / Farmacológicas</label>
+                  <textarea id="field-referenciasFarmacologicas" rows="4" placeholder="Separe cada referência ou link por vírgula..." oninput="updateProgress()"></textarea>
+                  <div class="helper-text">Ativa a pílula de Artigos Científicos e popula a aba Artigos.</div>
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="field-referenciaGeral">Referências Gerais</label>
+                  <textarea id="field-referenciaGeral" rows="4" placeholder="Livros, herbários ou links gerais separados por vírgula..." oninput="updateProgress()"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BARRA FIXA DE SALVAMENTO DA PLANTA -->
+          <div class="sticky-save-bar">
+            <div class="sticky-save-inner">
+              <button type="button" class="btn btn-outline" onclick="closePlantEditor()">Cancelar</button>
+              <button type="button" class="btn btn-primary" id="btn-save-plant" onclick="savePlanta()">
+                <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                  <polyline points="17 21 17 13 7 13 7 21" />
+                  <polyline points="7 3 7 8 15 8" />
+                </svg>
+                <span id="save-plant-text">Salvar Planta</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════
+           ABA 2: POSTAGENS E DESTAQUES (NOTÍCIAS)
+      ════════════════════════════════════════════════════════ -->
+      <section id="tab-posts" class="tab-content" aria-label="Gestão de Postagens e Destaques">
+
+        <!-- VISÃO A: LISTA DE POSTAGENS -->
+        <div id="posts-list-view">
+          <div class="section-top">
+            <div class="section-top-title">
+              <h2>Postagens e Destaques</h2>
+              <p>Publique matérias, novidades e conteúdos que alimentam o carrossel de Destaques da Home e a aba Notícias.</p>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="openPostEditor(null)">
+              <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>Nova Postagem</span>
+            </button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Postagem</th>
+                  <th>Ordem</th>
+                  <th>Destino ao Tocar</th>
+                  <th>Publicação</th>
+                  <th style="text-align:right;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="posts-tbody"></tbody>
+            </table>
+          </div>
+          <div id="empty-state-posts" class="empty-state" style="display:none;margin-top:12px;">
+            Nenhuma postagem ou notícia cadastrada no momento.
+          </div>
+        </div>
+
+        <!-- VISÃO B: EDITOR DE POSTAGEM (INLINE) -->
+        <div id="posts-editor-view" style="display:none;">
+          <div class="editor-header-bar">
+            <div class="editor-header-left">
+              <button type="button" class="btn btn-outline btn-sm" onclick="closePostEditor()">
+                <svg class="icon-svg sm" viewBox="0 0 24 24" aria-hidden="true">
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
+                <span>Voltar às postagens</span>
+              </button>
+              <span class="editor-header-title" id="post-editor-heading">Nova Postagem</span>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <div class="section-body open" style="border-top:none;padding-top:20px;">
+              <div class="form-grid-3">
+                <div class="field-group" style="grid-column: span 2;">
+                  <label class="field-label" for="post-titulo">
+                    <span>Título da Postagem</span>
+                    <span class="required-tag">Obrigatório</span>
+                  </label>
+                  <input type="text" id="post-titulo" placeholder="Ex: Novas descobertas sobre óleos essenciais da Amazônia" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="post-ordem">Ordem de Prioridade</label>
+                  <input type="number" id="post-ordem" value="0" min="0" step="1" />
+                  <div class="helper-text">Menor número aparece primeiro no carrossel (0, 1, 2...).</div>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="post-resumo">Resumo / Texto da Matéria</label>
+                <textarea id="post-resumo" rows="4" placeholder="Escreva o resumo informativo que aparece nos cards de Destaque e na aba Notícias..."></textarea>
+              </div>
+
+              <div class="form-grid-2">
+                <div class="field-group">
+                  <label class="field-label" for="post-imagemUrl">
+                    <span>Imagem de Capa</span>
+                    <span class="required-tag">Obrigatório</span>
+                  </label>
+                  <div class="upload-box" id="post-img-zone" onclick="document.getElementById('post-img-input').click()" role="button" tabindex="0" aria-label="Enviar imagem de capa da postagem">
+                    <svg class="icon-svg xl upload-box-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <div class="upload-box-title">Clique para enviar a capa da notícia</div>
+                    <div class="upload-box-sub">JPG, PNG ou WebP</div>
+                    <img class="upload-preview-img" id="post-img-preview" src="" alt="Pré-visualização da capa da postagem" />
+                  </div>
+                  <input type="file" id="post-img-input" accept="image/*" style="display:none" onchange="handlePostImageSelect()" />
+                  <div class="upload-progress-wrap" id="post-img-progress-wrap">
+                    <div class="upload-progress-label"><span>Enviando capa...</span><span id="post-img-pct">0%</span></div>
+                    <div class="upload-progress-track"><div class="upload-progress-fill" id="post-img-progress-fill"></div></div>
+                  </div>
+                  <input type="url" id="post-imagemUrl" placeholder="Ou cole a URL da imagem de capa..." style="margin-top:8px;" oninput="syncPostCoverPreview()" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="post-plantaId">Vincular a uma Planta do Catálogo (Opcional)</label>
+                  <select id="post-plantaId">
+                    <option value="">Nenhuma planta vinculada (usar apenas link externo)</option>
+                  </select>
+                  <div class="helper-text">Se selecionada, ao tocar na notícia dentro do app, o leitor poderá abrir diretamente a ficha desta planta.</div>
+
+                  <div style="margin-top:18px;">
+                    <label class="field-label" for="post-link">Link Externo da Matéria / Artigo (Opcional)</label>
+                    <input type="url" id="post-link" placeholder="https://..." />
+                    <div class="helper-text">URL aberta quando o usuário toca em "Ver postagem".</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:16px;border-top:1px solid var(--border);">
+                <button type="button" class="btn btn-outline" onclick="closePostEditor()">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btn-save-post" onclick="savePostagem()">
+                  <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span id="save-post-text">Publicar Postagem</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════
+           ABA 3: SOLICITAÇÕES DE ACESSO (ADMIN / SUPER ADMIN)
+      ════════════════════════════════════════════════════════ -->
+      <section id="tab-requests" class="tab-content" aria-label="Solicitações de Cargo">
+        <div class="section-top">
+          <div class="section-top-title">
+            <h2>Pedidos de Acesso (Escritor)</h2>
+            <p>Usuários do aplicativo que solicitaram permissão para colaborar no catálogo de plantas.</p>
+          </div>
+        </div>
         <div id="requests-list"></div>
-        <div id="empty-state-requests" style="display:none">Nenhum pedido pendente.</div>
-      </div>
+        <div id="empty-state-requests" class="empty-state" style="display:none;">
+          Nenhuma solicitação de cargo pendente.
+        </div>
+      </section>
 
-      <!-- TAB: USERS -->
-      <div id="tab-users" class="tab-content">
+      <!-- ═══════════════════════════════════════════════════════
+           ABA 4: USUÁRIOS E CARGOS (ADMIN / SUPER ADMIN)
+      ════════════════════════════════════════════════════════ -->
+      <section id="tab-users" class="tab-content" aria-label="Gerenciamento de Usuários">
+        <div class="section-top">
+          <div class="section-top-title">
+            <h2>Usuários e Permissões</h2>
+            <p>Consulte contas registradas e gerencie os níveis de acesso da equipe.</p>
+          </div>
+          <button type="button" class="btn btn-primary" id="btn-open-create-user" onclick="openCreateModal()">
+            <svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            <span>Criar Conta</span>
+          </button>
+        </div>
+
         <div class="toolbar">
           <div class="search-wrap">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="search-input" placeholder="Pesquisar usuários…" oninput="renderUsersTable()" />
+            <svg class="icon-svg search-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input type="text" id="search-input" placeholder="Buscar por nome ou e-mail..." aria-label="Buscar usuários" oninput="renderUsersTable()" />
           </div>
-          <button class="btn btn-green" onclick="openCreateModal()">＋ Criar Usuário</button>
         </div>
+
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Email</th><th>Nome</th><th>Cargo</th><th>Ações</th></tr></thead>
+            <thead>
+              <tr>
+                <th>E-mail</th>
+                <th>Nome</th>
+                <th>Cargo</th>
+                <th style="text-align:right;">Ações</th>
+              </tr>
+            </thead>
             <tbody id="users-tbody"></tbody>
           </table>
-          <div id="empty-state-users" style="display:none">Nenhum utilizador encontrado.</div>
         </div>
-      </div>
+        <div id="empty-state-users" class="empty-state" style="display:none;margin-top:12px;">
+          Nenhum usuário encontrado.
+        </div>
+      </section>
 
-      <!-- TAB: PLANTS -->
-      <div id="tab-plants" class="tab-content">
-        <div class="toolbar">
-          <div class="search-wrap">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="search-plants" placeholder="Pesquisar plantas…" oninput="renderPlantsTable()" />
+      <!-- ═══════════════════════════════════════════════════════
+           ABA 5: SUGESTÕES DO APP (ADMIN / SUPER ADMIN)
+      ════════════════════════════════════════════════════════ -->
+      <section id="tab-suggestions" class="tab-content" aria-label="Sugestões da Comunidade">
+        <div class="section-top">
+          <div class="section-top-title">
+            <h2>Sugestões da Comunidade</h2>
+            <p>Mensagens e correções enviadas pelos leitores através do aplicativo móvel.</p>
           </div>
-          <button class="btn btn-green" onclick="openPlantForm()">＋ Nova Planta</button>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Nome</th><th>Status</th><th>Ações</th></tr></thead>
-            <tbody id="plants-tbody"></tbody>
-          </table>
-          <div id="empty-state-plants" style="display:none">Nenhuma planta encontrada.</div>
+        <div id="suggestions-list"></div>
+        <div id="empty-state-suggestions" class="empty-state" style="display:none;">
+          Nenhuma sugestão recebida até o momento.
         </div>
-      </div>
+      </section>
+
     </main>
   </div>
 
-  <!-- MODAL: Atribuir Cargo -->
-  <div class="modal-backdrop" id="modal-role">
+  <!-- MODAL: ALTERAR CARGO -->
+  <div class="modal-backdrop" id="modal-role" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal">
-      <h2 id="modal-title">🎖️ Atribuir Cargo</h2>
-      <p style="font-size:13px;color:var(--text-dim);margin-bottom:18px;" id="modal-role-email"></p>
-      <div class="field">
-        <label>Cargo</label>
+      <h2 id="modal-title">Alterar Permissão de Acesso</h2>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;" id="modal-role-email"></p>
+      <div class="field-group" style="margin-top:0;">
+        <label class="field-label" for="role-select">Cargo no Sistema</label>
         <select id="role-select">
-          <option value="usuario">Usuário (leitor)</option>
-          <option value="escritor">Escritor (editar plantas)</option>
-          <option value="admin">Admin (gerenciar apps)</option>
-          <option value="super_admin">Super Admin (total)</option>
+          <option value="usuario">Usuário (Leitor no App)</option>
+          <option value="escritor">Escritor (Criar e editar plantas e postagens)</option>
+          <option value="admin">Admin (Moderar conteúdo e solicitações)</option>
+          <option value="super_admin">Super Admin (Controle total e usuários)</option>
         </select>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-outline" onclick="closeRoleModal()">Cancelar</button>
-        <button class="btn btn-green" id="btn-save-role" onclick="saveRole()">Salvar</button>
+        <button type="button" class="btn btn-outline" onclick="closeRoleModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-save-role" onclick="saveRole()">Salvar Alteração</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: Criar Conta -->
-  <div class="modal-backdrop" id="modal-create">
+  <!-- MODAL: CRIAR CONTA -->
+  <div class="modal-backdrop" id="modal-create" role="dialog" aria-modal="true" aria-labelledby="modal-create-heading">
     <div class="modal">
-      <h2>✨ Criar Conta</h2>
-      <div class="field"><label>Nome</label><input type="text" id="new-name" placeholder="Nome completo" /></div>
-      <div class="field"><label>E-mail</label><input type="email" id="new-email" /></div>
-      <div class="field"><label>Senha</label><input type="password" id="new-pass" placeholder="Mínimo 6 chars" /></div>
+      <h2 id="modal-create-heading">Criar Nova Conta</h2>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Cadastre um novo colaborador ou usuário.</p>
+      <div class="field-group" style="margin-top:0;">
+        <label class="field-label" for="new-name">Nome Completo</label>
+        <input type="text" id="new-name" placeholder="Nome do colaborador" />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="new-email">E-mail</label>
+        <input type="email" id="new-email" placeholder="email@dominio.com" />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="new-pass">Senha Inicial</label>
+        <input type="password" id="new-pass" placeholder="Mínimo de 6 caracteres" />
+      </div>
       <div class="modal-actions">
-        <button class="btn btn-outline" onclick="closeCreateModal()">Cancelar</button>
-        <button class="btn btn-green" id="btn-create" onclick="doCreateUser()">Criar</button>
+        <button type="button" class="btn btn-outline" onclick="closeCreateModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-create" onclick="doCreateUser()">Criar Conta</button>
       </div>
     </div>
   </div>
 
-  <div id="toast"></div>
+  <!-- TOAST GLOBAL -->
+  <div id="toast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+  <script type="module" src="/admin/app.js?v=3"></script>
 
 </body>
 </html>

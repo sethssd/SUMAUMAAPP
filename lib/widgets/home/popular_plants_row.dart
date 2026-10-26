@@ -100,12 +100,12 @@ class _PopularAvatar extends StatelessWidget {
                         plant.imagemUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => Container(
-                          color: const Color(0xFF2D6A4F),
+                          color: SumaColors.greenAccent,
                           child: const Icon(Icons.eco, color: Colors.white54, size: 24),
                         ),
                       )
                     : Container(
-                        color: const Color(0xFF2D6A4F),
+                        color: SumaColors.greenAccent,
                         child: const Icon(Icons.eco, color: Colors.white54, size: 24),
                       ),
               ),

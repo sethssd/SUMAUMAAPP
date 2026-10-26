@@ -1,6 +1,8 @@
+import 'dart:ui' as ui;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../services/auth_service.dart';
 import 'public_signup_screen.dart';
 
@@ -159,16 +161,23 @@ class _PublicLoginScreenState extends State<PublicLoginScreen>
                 children: [
                   const SizedBox(height: 40),
 
-                  // ── Logo (Sumaúma) ──────────────────────────────
+                  // ── Logo (Sumaúma em SVG com transição Hero) ────
                   Center(
-                    child: Image.asset(
-                      'icons/ico-branco.png',
-                      height: 180,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(
-                        Icons.eco_rounded,
-                        color: Colors.white,
-                        size: 100,
+                    child: Hero(
+                      tag: 'sumauma-hero-logo',
+                      createRectTween: (begin, end) => RectTween(begin: begin, end: end),
+                      flightShuttleBuilder: sumaumaHeroFlightBuilder,
+                      child: SizedBox(
+                        width: 180 * (1080 / 877),
+                        height: 180,
+                        child: SvgPicture.asset(
+                          'icons/sumauma_logo.svg',
+                          fit: BoxFit.contain,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -228,8 +237,22 @@ class _PublicLoginScreenState extends State<PublicLoginScreen>
                     onTap: _isLoading
                         ? null
                         : () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => PublicSignUpScreen(onSuccess: widget.onSuccess),
+                              PageRouteBuilder(
+                                transitionDuration: const Duration(milliseconds: 700),
+                                reverseTransitionDuration: const Duration(milliseconds: 600),
+                                pageBuilder: (context, animation, secondaryAnimation) =>
+                                    PublicSignUpScreen(onSuccess: widget.onSuccess),
+                                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                  final fade = CurvedAnimation(
+                                    parent: animation,
+                                    curve: Curves.easeInOutCubic,
+                                    reverseCurve: Curves.easeInOutCubic,
+                                  );
+                                  return FadeTransition(
+                                    opacity: fade,
+                                    child: child,
+                                  );
+                                },
                               ),
                             ),
                     child: Column(
@@ -499,4 +522,40 @@ class _SocialIconButton extends StatelessWidget {
     }
     return const SizedBox.shrink();
   }
+}
+
+/// Construtor da animação Hero que expande o ícone da Sumaúma do topo da tela de
+/// login (opacidade 1.0) para a marca d'água em tela cheia da tela de cadastro (opacidade 0.08).
+Widget sumaumaHeroFlightBuilder(
+  BuildContext flightContext,
+  Animation<double> animation,
+  HeroFlightDirection flightDirection,
+  BuildContext fromHeroContext,
+  BuildContext toHeroContext,
+) {
+  final curved = CurvedAnimation(
+    parent: animation,
+    curve: Curves.easeInOutCubic,
+    reverseCurve: Curves.easeInOutCubic,
+  );
+  return AnimatedBuilder(
+    animation: curved,
+    builder: (context, _) {
+      final opacity = ui.lerpDouble(1.0, 0.08, curved.value) ?? 0.08;
+      return IgnorePointer(
+        child: Opacity(
+          opacity: opacity.clamp(0.0, 1.0),
+          child: SvgPicture.asset(
+            'icons/sumauma_logo.svg',
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            colorFilter: const ColorFilter.mode(
+              Colors.white,
+              BlendMode.srcIn,
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }

@@ -3,13 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Modelo para um documento da coleção `destaques`.
 /// Campos esperados no Firestore:
 ///   titulo (String), resumo (String), imagemUrl (String),
-///   link (String), dataPublicacao (Timestamp), ordem (int).
+///   link (String), plantaId (String opcional), dataPublicacao (Timestamp), ordem (int).
 class DestaqueModel {
   final String id;
   final String titulo;
   final String resumo;
   final String imagemUrl;
   final String link;
+  final String plantaId;
   final DateTime? dataPublicacao;
   final int ordem;
 
@@ -19,6 +20,7 @@ class DestaqueModel {
     required this.resumo,
     required this.imagemUrl,
     required this.link,
+    this.plantaId = '',
     this.dataPublicacao,
     required this.ordem,
   });
@@ -32,6 +34,7 @@ class DestaqueModel {
       resumo: data['resumo'] ?? '',
       imagemUrl: data['imagemUrl'] ?? '',
       link: data['link'] ?? '',
+      plantaId: data['plantaId']?.toString() ?? '',
       dataPublicacao: pubTs?.toDate(),
       ordem: (data['ordem'] as num?)?.toInt() ?? 0,
     );

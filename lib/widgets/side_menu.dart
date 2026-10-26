@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:async';
-import '../screens/admin_login_screen.dart';
-import '../screens/manage_plants_screen.dart';
-import '../screens/manage_admins_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../screens/suggestions_screen.dart';
 import '../screens/request_role_screen.dart';
+import '../utils/app_constants.dart';
 import '../utils/theme_controller.dart';
 
 class SideMenu extends StatefulWidget {
@@ -17,26 +15,21 @@ class SideMenu extends StatefulWidget {
 }
 
 class _SideMenuState extends State<SideMenu> {
-  Timer? _adminTimer; // Variável para controlar o timer
-  String _userRole =
-      'usuario'; // Armazena o papel do usuário (user, escritor, admin, super_admin)
+  String _userRole = 'usuario';
 
   @override
   void initState() {
     super.initState();
-    _loadUserRole(); // Carrega o papel do usuário quando o menu abre
+    _loadUserRole();
   }
 
   /// Carrega o papel do usuário atual da coleção 'users' no Firestore
-  /// Se o usuário não estiver autenticado, mantém 'usuario' como padrão
   Future<void> _loadUserRole() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-
       if (user != null) {
-        // Busca o documento do usuário na coleção 'users'
         final userDoc = await FirebaseFirestore.instance
-            .collection('users')
+            .collection(AppConstants.collectionUsers)
             .doc(user.uid)
             .get();
 
@@ -54,13 +47,22 @@ class _SideMenuState extends State<SideMenu> {
     }
   }
 
-  /// Realiza o logout do usuário autenticado
-  /// Limpa a sessão do Firebase Auth e volta à tela anterior
+  Future<void> _openWebPortal() async {
+    final uri = Uri.parse(AppConstants.webFormBaseUrl);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível abrir o painel web.')),
+        );
+      }
+    }
+  }
+
   Future<void> _logout() async {
     try {
       await FirebaseAuth.instance.signOut();
       if (mounted) {
-        Navigator.pop(context); // Fecha o menu
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Desconectado com sucesso')),
         );
@@ -68,136 +70,70 @@ class _SideMenuState extends State<SideMenu> {
     } catch (e) {
       debugPrint('Erro ao fazer logout: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Erro ao desconectar: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao desconectar: $e')),
+        );
       }
     }
   }
 
-  void _onTimerComplete() {
-    _adminTimer = null; // Limpa o timer
-
-    // 1. Fecha o menu
-    Navigator.pop(context);
-
-    // 2. Abre a tela de login (apenas se a tela ainda existir)
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-      );
-    }
-  }
-
-  // O que acontece quando o usuário CANCELA o gesto (solta o dedo)
-  void _cancelTimer() {
-    if (_adminTimer != null && _adminTimer!.isActive) {
-      _adminTimer!.cancel(); // Cancela o timer
-      _adminTimer = null;
-    }
-  }
-
-  @override
-  void dispose() {
-    _cancelTimer(); // Garante que o timer seja cancelado se o widget for destruído
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
+    final isStaff = _userRole == AppConstants.roleEscritor ||
+        _userRole == AppConstants.roleAdmin ||
+        _userRole == AppConstants.roleSuperAdmin;
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // 1. Usamos um GestureDetector para capturar o gesto
-          GestureDetector(
-            // 2. Quando o usuário COMEÇA a segurar
-            onLongPressStart: (_) {
-              // Inicia o timer de 10 segundos
-              _adminTimer = Timer(
-                const Duration(seconds: 10),
-                _onTimerComplete,
-              );
-            },
-            // 3. Quando o usuário SOLTA o dedo
-            onLongPressEnd: (_) {
-              _cancelTimer(); // Cancela o timer
-            },
-            // 4. O cabeçalho que o usuário vê (é o "filho" do gesto)
-            child: UserAccountsDrawerHeader(
-              accountName: const Text(
-                "Sumaúma",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+          UserAccountsDrawerHeader(
+            accountName: const Text(
+              'Sumaúma',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-              accountEmail: const Text(
-                "Enciclopédia Amazônica",
-                style: TextStyle(color: Colors.white70),
-              ),
-              currentAccountPicture: Builder(
-                builder: (context) {
-                  final isDark =
-                      Theme.of(context).brightness == Brightness.dark;
-                  return Image.asset(
-                    isDark ? 'icons/ico-branco.png' : 'icons/ico-verde.png',
-                    fit: BoxFit.contain,
-                  );
-                },
-              ),
-              decoration: BoxDecoration(
-                color: Theme.of(context).appBarTheme.backgroundColor,
-              ),
+            ),
+            accountEmail: const Text(
+              'Enciclopédia Amazônica',
+              style: TextStyle(color: Colors.white70),
+            ),
+            currentAccountPicture: Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Image.asset(
+                  isDark ? 'icons/ico-branco.png' : 'icons/ico-verde.png',
+                  fit: BoxFit.contain,
+                );
+              },
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).appBarTheme.backgroundColor,
             ),
           ),
 
-          // Menu de Administração (visível apenas para admin/escritor/super_admin)
-
-          // Opção "Gerenciar Plantas" - visível para escritor, admin, e super_admin
-          if (_userRole == 'escritor' ||
-              _userRole == 'admin' ||
-              _userRole == 'super_admin')
+          // Acesso unificado à Central Editorial Web para escritores e administradores
+          if (isStaff)
             ListTile(
-              leading: const Icon(Icons.agriculture),
-              title: const Text('Gerenciar Plantas'),
+              leading: const Icon(Icons.open_in_browser_rounded),
+              title: const Text('Central Editorial (Web)'),
+              subtitle: const Text('Plantas, postagens e administração'),
               onTap: () {
-                Navigator.pop(context); // Fecha o menu
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ManagePlantsScreen(),
-                  ),
-                );
+                Navigator.pop(context);
+                _openWebPortal();
               },
             ),
 
-          // Opção "Gerenciar Administradores" - visível apenas para super_admin
-          if (_userRole == 'super_admin')
-            ListTile(
-              leading: const Icon(Icons.admin_panel_settings),
-              title: const Text('Gerenciar Administradores'),
-              onTap: () {
-                Navigator.pop(context); // Fecha o menu
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ManageAdminsScreen(),
-                  ),
-                );
-              },
-            ),
-
-          // Opção "Solicitar Acesso" - visível apenas para usuários comuns
-          if (_userRole == 'usuario' &&
+          // Opção "Solicitar Acesso" — visível apenas para usuários leitores logados
+          if (_userRole == AppConstants.roleUsuario &&
               FirebaseAuth.instance.currentUser != null)
             ListTile(
               leading: const Icon(Icons.edit_note_rounded),
               title: const Text('Pedidos (Ser Escritor)'),
               onTap: () {
-                Navigator.pop(context); // Fecha o menu
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -207,21 +143,16 @@ class _SideMenuState extends State<SideMenu> {
               },
             ),
 
-          // Divisor - mostrado apenas se há opções de admin ou solicitação visíveis
-          if (_userRole == 'escritor' ||
-              _userRole == 'admin' ||
-              _userRole == 'super_admin' ||
-              (_userRole == 'usuario' &&
+          if (isStaff ||
+              (_userRole == AppConstants.roleUsuario &&
                   FirebaseAuth.instance.currentUser != null))
             const Divider(),
 
-          // Menu Geral
           ListTile(
             leading: const Icon(Icons.lightbulb_outline),
             title: const Text('Sugestões'),
             onTap: () {
-              Navigator.pop(context); // Fecha o menu
-              // NAVEGA PARA A NOVA TELA
+              Navigator.pop(context);
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -246,7 +177,6 @@ class _SideMenuState extends State<SideMenu> {
             },
           ),
 
-          // ── TEMA ─────────────────────────────────────────────
           const Divider(),
           ValueListenableBuilder<ThemeMode>(
             valueListenable: themeController,
@@ -260,7 +190,6 @@ class _SideMenuState extends State<SideMenu> {
             },
           ),
 
-          // ── LOGOUT ───────────────────────────────────────────
           if (FirebaseAuth.instance.currentUser != null) ...[
             const Divider(),
             ListTile(
