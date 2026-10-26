@@ -21,25 +21,30 @@ service cloud.firestore {
       // Regra de CRIAR: Valida o cargo e garante que o creatorId não seja forjado
       allow create: if isLoggedIn() && (
                       getRole() == 'super_admin' || 
+                      getRole() == 'admin' ||
                       (getRole() == 'escritor' && request.resource.data.creatorId == request.auth.uid)
                     );
                     
       // Regra de ATUALIZAR:
-      allow update: if isLoggedIn() && (getRole() == 'escritor' || getRole() == 'super_admin');
+      allow update: if isLoggedIn() && (
+                      getRole() == 'escritor' ||
+                      getRole() == 'admin' ||
+                      getRole() == 'super_admin'
+                    );
       
       // Regra de DELETAR: Revalida o cargo e a autoria
       allow delete: if isLoggedIn() && (
-                      // 1. O Super Admin pode deletar...
                       getRole() == 'super_admin' || 
-                      // 2. OU o dono (se ainda for escritor) pode deletar
+                      getRole() == 'admin' ||
                       (getRole() == 'escritor' && resource.data.creatorId == request.auth.uid)
                     );
     }
 
     // --- REGRAS PARA "USUÁRIOS" ---
     match /users/{userId} {
-      // Super admin gerencia a coleção inteira
-      allow list, write: if isLoggedIn() && getRole() == 'super_admin';
+      // Super admin gerencia a coleção inteira; admin pode listar
+      allow list: if isLoggedIn() && (getRole() == 'super_admin' || getRole() == 'admin');
+      allow write: if isLoggedIn() && getRole() == 'super_admin';
       // Usuário logado lê o próprio perfil
       allow get: if isLoggedIn() && request.auth.uid == userId;
       // Usuário logado cria o próprio perfil no primeiro login (auto-registro)
@@ -53,15 +58,15 @@ service cloud.firestore {
                     request.resource.data.texto is string &&
                     request.resource.data.texto.size() <= 1000 &&
                     request.resource.data.lido == false;
-      allow read, update, delete: if false;
+      allow read, update, delete: if isLoggedIn() && (getRole() == 'super_admin' || getRole() == 'admin');
     }
 
     // --- REGRAS PARA "SOLICITAÇÕES DE CARGO" ---
     match /role_requests/{userId} {
       // Qualquer usuário logado pode criar e ler seu próprio pedido
       allow create, get: if isLoggedIn() && request.auth.uid == userId;
-      // Super admin pode listar e deletar solicitações
-      allow list, delete: if isLoggedIn() && getRole() == 'super_admin';
+      // Super admin e admin podem listar e deletar solicitações
+      allow list, delete: if isLoggedIn() && (getRole() == 'super_admin' || getRole() == 'admin');
     }
 
     // --- REGRAS PARA "DESTAQUES" (NOTÍCIAS) ---
