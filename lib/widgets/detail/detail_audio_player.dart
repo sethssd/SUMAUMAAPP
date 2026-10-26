@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import '../../utils/app_theme.dart';
@@ -36,10 +37,12 @@ class _SumaAudioPlayerState extends State<SumaAudioPlayer> {
       if (mounted) setState(() => position = p);
     });
     try {
-      _audioPlayer.setAudioSource(LockCachingAudioSource(
-        Uri.parse(widget.audioUrl),
-        tag: MediaItem(id: widget.audioUrl, album: 'Sumaúma', title: widget.title),
-      ));
+      final uri = Uri.parse(widget.audioUrl);
+      final mediaTag = MediaItem(id: widget.audioUrl, album: 'Sumaúma', title: widget.title);
+      final source = kIsWeb
+          ? AudioSource.uri(uri, tag: mediaTag)
+          : LockCachingAudioSource(uri, tag: mediaTag);
+      _audioPlayer.setAudioSource(source);
     } catch (e) {
       debugPrint('Erro ao precarregar áudio: $e');
     }

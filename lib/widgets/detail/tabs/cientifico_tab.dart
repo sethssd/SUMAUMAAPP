@@ -32,6 +32,30 @@ class _CientificoTabState extends State<CientificoTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (plant.taxonomiaNomesPopulares.isNotEmpty)
+            DetailPremiumCard(
+              icon: Icons.account_tree_rounded,
+              title: 'TAXONOMIA BOTÂNICA',
+              accentColor: Colors.deepPurple,
+              content: plant.taxonomiaNomesPopulares,
+            ),
+
+          if (plant.fenologia.isNotEmpty)
+            DetailPremiumCard(
+              icon: Icons.calendar_month_rounded,
+              title: 'FENOLOGIA (CICLO REPRODUTIVO)',
+              accentColor: Colors.orange,
+              content: plant.fenologia,
+            ),
+
+          if (plant.usosEValorEconomico.isNotEmpty)
+            DetailPremiumCard(
+              icon: Icons.agriculture_rounded,
+              title: 'USOS E VALOR ECONÔMICO',
+              accentColor: Colors.brown,
+              content: plant.usosEValorEconomico,
+            ),
+
           if (plant.composicaoQuimica != null && plant.composicaoQuimica!.isNotEmpty)
             DetailPremiumCard(
               icon: Icons.science_rounded,
