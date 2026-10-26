@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/destaque_model.dart';
+import '../../screens/detail_screen.dart';
 import '../../utils/app_theme.dart';
 
 /// Carrossel horizontal "Destaques" com animação de escala ao deslizar:
@@ -34,12 +35,23 @@ class _DestaqueCarouselState extends State<DestaqueCarousel> {
     super.dispose();
   }
 
-  Future<void> _openLink(BuildContext context, String url) async {
-    final trimmed = url.trim();
+  Future<void> _openDestaque(BuildContext context, DestaqueModel d) async {
+    final plantaId = d.plantaId.trim();
+    if (plantaId.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DetailScreen(plantaId: plantaId),
+        ),
+      );
+      return;
+    }
+
+    final trimmed = d.link.trim();
     if (trimmed.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Esta postagem ainda não possui um link externo vinculado.'),
+          content: Text('Esta postagem é informativa e não possui link externo vinculado.'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -75,7 +87,7 @@ class _DestaqueCarouselState extends State<DestaqueCarousel> {
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w800,
-              color: isDark ? SumaColors.greenSage : const Color(0xFF0A5C1A),
+              color: isDark ? SumaColors.greenSage : SumaColors.greenAccent,
             ),
           ),
         ),
@@ -120,7 +132,7 @@ class _DestaqueCarouselState extends State<DestaqueCarousel> {
                   child: _DestaqueCard(
                     destaque: d,
                     isDark: isDark,
-                    onTap: () => _openLink(context, d.link),
+                    onTap: () => _openDestaque(context, d),
                   ),
                 );
               },
@@ -150,7 +162,7 @@ class _DestaqueCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0F3D1E) : const Color(0xFF007A1E),
+          gradient: isDark ? SumaGradients.darkCard : SumaGradients.destaqueCard,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(

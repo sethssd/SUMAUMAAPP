@@ -63,12 +63,15 @@ class _EditPlantScreenState extends State<EditPlantScreen> {
     'Chá',
     'Suco',
     'Banho',
+    'Artesanato',
     'Óleo',
-    'Fruto',
+    'Raiz',
+    'Caule',
     'Semente',
+    'Fruto',
+    'Flor',
     'Folha',
     'Casca',
-    'Raiz',
   ];
 
   final _formKey = GlobalKey<FormState>();

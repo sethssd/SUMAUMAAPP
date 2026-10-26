@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/destaque_model.dart';
+import '../../screens/detail_screen.dart';
 import '../../utils/app_theme.dart';
 
 /// Aba "Notícias" — Canal informativo sobre acontecimentos relacionados às
 /// plantas e ao meio ambiente na Amazônia. Ao tocar em uma notícia, redireciona
-/// diretamente para a postagem vinculada.
+/// para a planta vinculada do catálogo ou para a postagem externa.
 class NoticiasTabView extends StatelessWidget {
   final List<DestaqueModel> destaques;
   final Future<void> Function()? onRefresh;
@@ -16,12 +17,23 @@ class NoticiasTabView extends StatelessWidget {
     this.onRefresh,
   });
 
-  Future<void> _openPostagem(BuildContext context, String url) async {
-    final trimmed = url.trim();
+  Future<void> _openPostagem(BuildContext context, DestaqueModel d) async {
+    final plantaId = d.plantaId.trim();
+    if (plantaId.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => DetailScreen(plantaId: plantaId),
+        ),
+      );
+      return;
+    }
+
+    final trimmed = d.link.trim();
     if (trimmed.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Esta postagem ainda não possui um link externo vinculado.'),
+          content: Text('Esta postagem é informativa e não possui link externo vinculado.'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -97,12 +109,12 @@ class NoticiasTabView extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? SumaColors.greenSage : const Color(0xFF0A5C1A),
+                    color: isDark ? SumaColors.greenSage : SumaColors.greenAccent,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Fique por dentro do que está acontecendo em relação às plantas, pesquisas e preservação na Amazônia. Toque em uma matéria para acessar a postagem completa.',
+                  'Fique por dentro do que está acontecendo em relação às plantas, pesquisas e preservação na Amazônia. Toque em uma matéria para acessar o conteúdo completo.',
                   style: TextStyle(
                     fontSize: 13,
                     height: 1.35,
@@ -116,13 +128,14 @@ class NoticiasTabView extends StatelessWidget {
 
         final d = destaques[index - 1];
         final dateStr = _formatDate(d.dataPublicacao);
+        final hasPlanta = d.plantaId.trim().isNotEmpty;
 
         return GestureDetector(
-          onTap: () => _openPostagem(context, d.link),
+          onTap: () => _openPostagem(context, d),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0F3D1E) : const Color(0xFF007A1E),
+              gradient: isDark ? SumaGradients.darkCard : SumaGradients.destaqueCard,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
@@ -207,20 +220,20 @@ class NoticiasTabView extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.18),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Ver postagem',
-                            style: TextStyle(
+                            hasPlanta ? 'Ver planta vinculada' : 'Ver postagem',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Icon(
-                            Icons.open_in_new_rounded,
+                            hasPlanta ? Icons.eco_rounded : Icons.open_in_new_rounded,
                             color: Colors.white,
                             size: 14,
                           ),

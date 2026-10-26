@@ -90,13 +90,16 @@ IconData _iconForManualAspect(String aspect) {
   }
   if (lower.contains('suco')) return Icons.local_drink_rounded;
   if (lower.contains('banho')) return Icons.bathtub_outlined;
+  if (lower.contains('artesanato') || lower.contains('artesenato')) {
+    return Icons.handyman_rounded;
+  }
   if (lower.contains('óleo') || lower.contains('oleo')) {
     return Icons.water_drop_rounded;
   }
   if (lower.contains('fruto')) return Icons.spa_rounded;
   if (lower.contains('semente')) return Icons.grain_rounded;
   if (lower.contains('folha')) return Icons.eco_rounded;
-  if (lower.contains('casca') || lower.contains('tronco')) {
+  if (lower.contains('casca') || lower.contains('tronco') || lower.contains('caule')) {
     return Icons.park_rounded;
   }
   if (lower.contains('raiz')) return Icons.grass_rounded;
@@ -123,7 +126,7 @@ class PlantAspectPill extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(3, 3, 8, 3),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E5231) : const Color(0xFF76D38B),
+          gradient: isDark ? SumaGradients.darkPill : SumaGradients.aspectPill,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -133,7 +136,7 @@ class PlantAspectPill extends StatelessWidget {
               width: 17,
               height: 17,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2EA055) : const Color(0xFF147A2E),
+                color: Colors.white.withValues(alpha: 0.22),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -145,10 +148,10 @@ class PlantAspectPill extends StatelessWidget {
             const SizedBox(width: 5),
             Text(
               data.label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : const Color(0xFF0A3815),
+                color: Colors.white,
               ),
             ),
           ],
@@ -206,7 +209,7 @@ class _TodasPlantasHubCardState extends State<TodasPlantasHubCard> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F3D1E) : const Color(0xFF007A1E),
+        gradient: isDark ? SumaGradients.darkCard : SumaGradients.todasPlantasCard,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -280,17 +283,17 @@ class _TodasPlantasHubCardState extends State<TodasPlantasHubCard> {
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
                             height: 1.15,
-                            color: isDark ? SumaColors.greenSage : const Color(0xFF0A5C1A),
+                            color: isDark ? SumaColors.greenSage : SumaColors.greenAccent,
                             decoration: TextDecoration.underline,
                             decorationColor:
-                                isDark ? SumaColors.greenSage : const Color(0xFF0A5C1A),
+                                isDark ? SumaColors.greenSage : SumaColors.greenAccent,
                           ),
                         ),
                         const SizedBox(width: 4),
                         Icon(
                           Icons.chevron_right_rounded,
                           size: 28,
-                          color: isDark ? SumaColors.greenSage : const Color(0xFF0A5C1A),
+                          color: isDark ? SumaColors.greenSage : SumaColors.greenAccent,
                         ),
                       ],
                     ),
@@ -334,7 +337,7 @@ class _TodasPlantasHubCardState extends State<TodasPlantasHubCard> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: isDark ? SumaColors.greenSage : const Color(0xFF0A5C1A),
+                        color: isDark ? SumaColors.greenSage : SumaColors.greenAccent,
                       ),
                     ),
                     const SizedBox(height: 4),

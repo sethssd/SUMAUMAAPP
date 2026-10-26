@@ -92,7 +92,7 @@ class PlantCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 15.5,
                               fontWeight: FontWeight.w800,
-                              color: isDark ? Colors.white : const Color(0xFF0A5C1A),
+                              color: isDark ? Colors.white : SumaColors.lightText,
                             ),
                           ),
                         ),

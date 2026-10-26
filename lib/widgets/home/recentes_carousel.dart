@@ -48,13 +48,13 @@ class RecentesCarousel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 22, 16, 115),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? const [Color(0xFF0F3D1E), Color(0xFF072310)]
-              : const [Color(0xFF007A1E), Color(0xFF074714)],
-        ),
+        gradient: isDark
+            ? const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF0F3D1E), Color(0xFF072310)],
+              )
+            : SumaGradients.adicionadosSection,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
@@ -149,20 +149,20 @@ class AdicionadosExplorarScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Adicionados Recentemente'),
-        backgroundColor: isDark ? SumaColors.darkAppBar : const Color(0xFF007A1E),
+        backgroundColor: isDark ? SumaColors.darkAppBar : SumaColors.greenAccent,
         foregroundColor: Colors.white,
       ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? const [Color(0xFF0F3D1E), Color(0xFF072310)]
-                : const [Color(0xFF007A1E), Color(0xFF074714)],
-          ),
+          gradient: isDark
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0F3D1E), Color(0xFF072310)],
+                )
+              : SumaGradients.adicionadosSection,
         ),
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
@@ -315,7 +315,7 @@ class _AdicionadoGridCard extends StatelessWidget {
                             size: 11,
                             color: isDark
                                 ? SumaColors.greenSage
-                                : const Color(0xFF147A2E),
+                                : SumaColors.greenAccent,
                           ),
                           const SizedBox(width: 2),
                           Expanded(
@@ -379,7 +379,7 @@ class _AdicionadoGridCard extends StatelessWidget {
                                   fontWeight: FontWeight.w800,
                                   color: isDark
                                       ? SumaColors.greenSage
-                                      : const Color(0xFF0A5C1A),
+                                      : SumaColors.greenAccent,
                                 ),
                               ),
                               const SizedBox(width: 2),
@@ -388,7 +388,7 @@ class _AdicionadoGridCard extends StatelessWidget {
                                 size: 18,
                                 color: isDark
                                     ? SumaColors.greenSage
-                                    : const Color(0xFF0A5C1A),
+                                    : SumaColors.greenAccent,
                               ),
                             ],
                           ),

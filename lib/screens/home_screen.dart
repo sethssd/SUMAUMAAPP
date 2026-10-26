@@ -10,6 +10,7 @@ import '../widgets/home/noticias_tab_view.dart';
 import '../widgets/home/plant_card.dart';
 import '../widgets/home/popular_plants_row.dart';
 import '../widgets/home/recentes_carousel.dart';
+import '../widgets/home/search_filter_modal.dart';
 import '../widgets/home/todas_plantas_hub_card.dart';
 import '../widgets/side_menu.dart';
 import '../utils/app_theme.dart';
@@ -58,8 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
   DocumentSnapshot? _lastDoc;
   final ScrollController _catalogScrollController = ScrollController();
 
-  // ── Estado: categoria selecionada no catálogo ──────────────────────────────
+  // ── Estado: categoria e filtros selecionados ───────────────────────────────
   String? _selectedCategory;
+  PlantFilterState _filterState = const PlantFilterState();
 
   // ── Estado: seções do Hub Inicial ──────────────────────────────────────────
   List<DestaqueModel> _destaques = [];
@@ -264,8 +266,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onCategorySelected(String? cat) {
     if (_selectedCategory == cat) return;
-    setState(() => _selectedCategory = cat);
+    setState(() {
+      _selectedCategory = cat;
+      _filterState = _filterState.copyWith(
+        tipos: cat != null && cat.isNotEmpty ? {cat} : <String>{},
+      );
+    });
     _fetchPlantas(reset: true);
+  }
+
+  Future<void> _openFilterModal() async {
+    _searchFocusNode.unfocus();
+    final result = await showSearchFilterModal(
+      context: context,
+      initialState: _filterState,
+      onChanged: (updated) {
+        if (!mounted) return;
+        setState(() {
+          _filterState = updated;
+          _selectedCategory =
+              updated.tipos.length == 1 ? updated.tipos.first : null;
+        });
+      },
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _filterState = result;
+        _selectedCategory =
+            result.tipos.length == 1 ? result.tipos.first : null;
+      });
+      _fetchPlantas(reset: true);
+    }
   }
 
   // ── Filtro inline de busca ─────────────────────────────────────────────────
@@ -291,12 +322,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: isDark ? SumaColors.darkBg : Colors.white,
+        backgroundColor: isDark ? SumaColors.darkBg : SumaColors.lightBg,
         drawer: const SideMenu(),
         body: !_hubLoaded && _isInitialLoading
             ? Center(
                 child: CircularProgressIndicator(
-                  color: isDark ? SumaColors.greenSage : const Color(0xFF007A1E),
+                  color: isDark ? SumaColors.greenSage : SumaColors.greenAccent,
                 ),
               )
             : SafeArea(
@@ -416,7 +447,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 46,
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF005B13),
+                    gradient: isDark ? null : SumaGradients.searchBar,
+                    color: isDark ? SumaColors.darkSurface : null,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
@@ -477,18 +509,64 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(width: 10),
-              // Botão de filtro (reservado para a próxima conversa)
-              Container(
-                width: 50,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF007A1E),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.tune_rounded,
-                  color: Colors.white,
-                  size: 26,
+              // Botão de filtro que abre o modal "Filtro de Pesquisa"
+              GestureDetector(
+                onTap: _openFilterModal,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      width: 50,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        gradient: isDark
+                            ? null
+                            : (_filterState.hasActiveFilters
+                                ? SumaGradients.filterActive
+                                : SumaGradients.searchBar),
+                        color: isDark
+                            ? (_filterState.hasActiveFilters
+                                ? SumaColors.greenAccentDark
+                                : SumaColors.darkSurface)
+                            : null,
+                        borderRadius: BorderRadius.circular(14),
+                        border: _filterState.hasActiveFilters
+                            ? Border.all(color: SumaColors.greenSage, width: 1.8)
+                            : null,
+                      ),
+                      child: const Icon(
+                        Icons.tune_rounded,
+                        color: Colors.white,
+                        size: 26,
+                      ),
+                    ),
+                    if (_filterState.hasActiveFilters)
+                      Positioned(
+                        top: -5,
+                        right: -5,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            gradient: isDark ? null : SumaGradients.searchBar,
+                            color: isDark ? SumaColors.greenAccent : null,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isDark ? SumaColors.darkBg : Colors.white,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Text(
+                            '${_filterState.activeCount}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -502,17 +580,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildHubTab(bool isDark) {
     final query = _searchQuery.trim();
-    final searchResults = query.isEmpty
+    final hasFilters = _filterState.hasActiveFilters;
+    final showInlineResults = query.isNotEmpty || hasFilters;
+    final searchResults = !showInlineResults
         ? const <PlantModel>[]
-        : _allHubPlants.where((p) => _matchesSearch(p, query)).toList();
+        : (_allHubPlants
+            .where((p) => _matchesSearch(p, query) && _filterState.matchesPlant(p))
+            .toList()
+          ..sort((a, b) => _filterState.matchScore(b).compareTo(_filterState.matchScore(a))));
 
     return RefreshIndicator(
       onRefresh: _fetchHubData,
       child: ListView(
         padding: const EdgeInsets.only(top: 6),
         children: [
-          // Resultados da pesquisa inline diretamente no Hub (sem mudar de tela)
-          if (query.isNotEmpty) ...[
+          // Resultados da pesquisa e/ou filtros inline diretamente no Hub (sem mudar de tela)
+          if (showInlineResults) ...[
             _buildInlineSearchResults(searchResults, query, isDark),
             const SizedBox(height: 20),
           ],
@@ -561,7 +644,8 @@ class _HomeScreenState extends State<HomeScreen> {
         color: isDark ? SumaColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: const Color(0xFF007A1E).withValues(alpha: 0.35),
+          color: (isDark ? SumaColors.greenSage : SumaColors.greenAccent)
+              .withValues(alpha: 0.35),
           width: 1.5,
         ),
         boxShadow: [
@@ -580,11 +664,13 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Expanded(
                 child: Text(
-                  'Resultados para "$query" (${results.length})',
+                  query.isNotEmpty
+                      ? 'Resultados para "$query" (${results.length})'
+                      : 'Plantas filtradas (${results.length})',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? SumaColors.greenSage : const Color(0xFF0A5C1A),
+                    color: isDark ? SumaColors.greenSage : SumaColors.greenAccent,
                   ),
                 ),
               ),
@@ -592,7 +678,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () {
                   _searchController.clear();
                   _searchFocusNode.unfocus();
-                  setState(() => _searchQuery = '');
+                  setState(() {
+                    _searchQuery = '';
+                    _filterState = const PlantFilterState();
+                    _selectedCategory = null;
+                  });
+                  _fetchPlantas(reset: true);
                 },
                 child: Text(
                   'Limpar',
@@ -606,12 +697,93 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+          if (_filterState.hasActiveFilters) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 34,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _filterState.activeLabels.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final label = _filterState.activeLabels[index];
+                  final iconType = iconTypeForFilterLabel(label);
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _filterState = _filterState.removeFilter(label);
+                        _selectedCategory = _filterState.tipos.length == 1
+                            ? _filterState.tipos.first
+                            : null;
+                      });
+                      _fetchPlantas(reset: true);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(5, 4, 9, 4),
+                      decoration: BoxDecoration(
+                        gradient: isDark ? null : SumaGradients.aspectPill,
+                        color: isDark ? SumaColors.greenAccent : null,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isDark
+                                    ? SumaColors.greenAccent
+                                    : const Color(0xFF245F30))
+                                .withValues(alpha: 0.28),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: CustomPaint(
+                                size: const Size(15, 15),
+                                painter: FilterIconPainter(
+                                  type: iconType,
+                                  color: SumaColors.greenAccent,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            label,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Icon(
+                            Icons.close_rounded,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           if (results.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                'Nenhuma planta encontrada com esse termo.',
+                'Nenhuma planta encontrada com os filtros selecionados.',
                 style: TextStyle(
                   fontSize: 13,
                   color: isDark ? Colors.white60 : Colors.grey.shade600,
@@ -691,7 +863,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Icons.chevron_right_rounded,
                         color: isDark
                             ? SumaColors.greenSage
-                            : const Color(0xFF0A5C1A),
+                            : SumaColors.greenAccent,
                       ),
                     ],
                   ),
@@ -714,9 +886,10 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }).whereType<PlantModel>().toList();
 
-    final plantas = _searchQuery.trim().isEmpty
-        ? allLoaded
-        : allLoaded.where((p) => _matchesSearch(p, _searchQuery)).toList();
+    final plantas = allLoaded.where((p) {
+      final matchesText = _searchQuery.trim().isEmpty || _matchesSearch(p, _searchQuery);
+      return matchesText && _filterState.matchesPlant(p);
+    }).toList();
 
     return CustomScrollView(
       controller: _catalogScrollController,
@@ -731,7 +904,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: isDark ? SumaColors.greenSage : const Color(0xFF0A5C1A),
+                color: isDark ? SumaColors.greenSage : SumaColors.greenAccent,
               ),
             ),
           ),
@@ -811,7 +984,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBottomNavBar(bool isDark) {
     final Color barBgColor = isDark ? SumaColors.darkCard : Colors.white;
-    final Color borderColor = const Color(0xFF147A2E).withValues(alpha: 0.20);
+    final Color borderColor = isDark
+        ? SumaColors.darkDivider
+        : SumaColors.greenAccent.withValues(alpha: 0.18);
     final double bottomInset = MediaQuery.of(context).padding.bottom;
 
     return TweenAnimationBuilder<double>(
@@ -865,10 +1040,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xFF43A047),
+                            gradient: isDark ? null : SumaGradients.bottomNavActiveCircle,
+                            color: isDark ? SumaColors.greenAccent : null,
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF43A047).withValues(alpha: 0.30),
+                                color: SumaColors.greenAccent.withValues(alpha: 0.32),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),
@@ -1078,7 +1254,7 @@ class _BottomNavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const inactiveMint = Color(0xFF76C888);
+    final inactiveColor = isDark ? Colors.white54 : SumaColors.lightTextMuted;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -1101,7 +1277,7 @@ class _BottomNavItem extends StatelessWidget {
                 child: Icon(
                   icon,
                   size: 26,
-                  color: isSelected ? Colors.white : inactiveMint,
+                  color: isSelected ? Colors.white : inactiveColor,
                 ),
               ),
             ),
@@ -1124,8 +1300,8 @@ class _BottomNavItem extends StatelessWidget {
                     height: 1.05,
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                     color: isSelected
-                        ? (isDark ? SumaColors.greenSage : const Color(0xFF0E6322))
-                        : (isDark ? Colors.white54 : inactiveMint),
+                        ? (isDark ? SumaColors.greenSage : SumaColors.greenAccent)
+                        : inactiveColor,
                   ),
                 ),
               ),
