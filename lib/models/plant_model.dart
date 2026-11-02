@@ -45,6 +45,8 @@ class PlantModel {
   final List<String> aspectosUso;
   /// Define se a planta deve aparecer em destaque no card "Popular" da Home.
   final bool isPopular;
+  /// Status editorial da planta ('publicado', 'em_analise', 'pendente').
+  final String status;
 
   const PlantModel({
     required this.id,
@@ -84,9 +86,20 @@ class PlantModel {
     this.locais,
     this.aspectosUso = const [],
     this.isPopular = false,
+    this.status = 'publicado',
   });
 
   // ── Getters automáticos para pílulas (badges) ──────────────────────────────
+
+  bool get isUnderAnalysis {
+    final s = status.trim().toLowerCase();
+    return s == 'em_analise' ||
+        s == 'em analise' ||
+        s == 'em análise' ||
+        s == 'pendente' ||
+        s == 'analise' ||
+        s == 'revisao';
+  }
 
   bool get hasAudio =>
       audioUrl.trim().isNotEmpty || (audioDescricaoUrl?.trim().isNotEmpty ?? false);
@@ -178,58 +191,138 @@ class PlantModel {
     return [];
   }
 
+  static DateTime? _parseDate(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is String && value.isNotEmpty) return DateTime.tryParse(value);
+    return null;
+  }
+
   factory PlantModel.fromSnapshot(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = (doc.data() as Map<String, dynamic>?) ?? <String, dynamic>{};
+    return PlantModel.fromMap(data, id: doc.id);
+  }
+
+  factory PlantModel.fromMap(Map<String, dynamic> data, {String? id}) {
     final cuidadosRaw = data['cuidados'];
     final cuidadosStr = cuidadosRaw is List
         ? cuidadosRaw.join('<br>')
         : (cuidadosRaw?.toString() ?? '');
 
-    final createdTs = data['dataCriacao'] as Timestamp?;
-    final updatedTs = data['updatedAt'] as Timestamp?;
+    final createdDate = _parseDate(data['dataCriacao'] ?? data['createdAt']);
+    final updatedDate = _parseDate(data['updatedAt']);
+
+    String resolvedStatus = (data['status']?.toString().trim() ?? '');
+    if (resolvedStatus.isEmpty) {
+      if (data['emAnalise'] == true || data['aprovado'] == false) {
+        resolvedStatus = 'em_analise';
+      } else {
+        resolvedStatus = 'publicado';
+      }
+    }
 
     return PlantModel(
-      id: doc.id,
-      nome: data['nome'] ?? '',
-      nomeCientifico: data['nomeCientifico'] ?? '',
-      descricao: data['descricao'] ?? '',
-      descricaoCurta: data['descricaoCurta'] ?? '',
-      descricaoSimples: data['descricaoSimples'] ?? '',
-      imagemUrl: data['imagemUrl'] ?? '',
+      id: id ?? data['id']?.toString() ?? '',
+      nome: data['nome']?.toString() ?? '',
+      nomeCientifico: data['nomeCientifico']?.toString() ?? '',
+      descricao: data['descricao']?.toString() ?? '',
+      descricaoCurta: data['descricaoCurta']?.toString() ?? '',
+      descricaoSimples: data['descricaoSimples']?.toString() ?? '',
+      imagemUrl: data['imagemUrl']?.toString() ?? '',
       imagensExtras: _parseList(data['imagensExtras'] ?? data['fotos'] ?? data['imagens']),
-      modelo3dUrl: data['modelo3dUrl'] ?? '',
-      audioUrl: data['audioUrl'] ?? '',
-      distribuicaoHabitat: data['distribuicaoHabitat'] ?? '',
-      fenologia: data['fenologia'] ?? '',
-      usosEValorEconomico: data['usosEValorEconomico'] ?? '',
-      taxonomiaNomesPopulares: data['taxonomiaNomesPopulares'] ?? '',
-      descobertasCientificas: data['descobertasCientificas'] ?? data['descricaoSimples'] ?? '',
+      modelo3dUrl: data['modelo3dUrl']?.toString() ?? '',
+      audioUrl: data['audioUrl']?.toString() ?? '',
+      distribuicaoHabitat: data['distribuicaoHabitat']?.toString() ?? '',
+      fenologia: data['fenologia']?.toString() ?? '',
+      usosEValorEconomico: data['usosEValorEconomico']?.toString() ?? '',
+      taxonomiaNomesPopulares: data['taxonomiaNomesPopulares']?.toString() ?? '',
+      descobertasCientificas: (data['descobertasCientificas'] ?? data['descricaoSimples'] ?? '').toString(),
       beneficios: _parseList(data['beneficios']),
-      comoUsar: data['comoUsar'] ?? '',
+      comoUsar: data['comoUsar']?.toString() ?? '',
       cuidados: cuidadosStr,
-      farmacologia: data['farmacologia'] ?? '',
-      creatorId: data['creatorId'] ?? '',
+      farmacologia: data['farmacologia']?.toString() ?? '',
+      creatorId: data['creatorId']?.toString() ?? '',
       excluida: data['excluida'] == true,
       keywords: _parseList(data['keywords']),
-      composicaoQuimica: data['composicaoQuimica'] as Map<String, dynamic>?,
-      propriedadesFarmacologicas: data['propriedadesFarmacologicas'] as List<dynamic>?,
-      tiposEstudo: data['tiposEstudo'] as Map<String, dynamic>?,
-      referenciaGeral: _parseList(data['referenciaGeral']),
-      referenciasCientificas: data['referenciasCientificas'] as List<dynamic>?,
-      referenciasFarmacologicas: _parseList(data['referenciasFarmacologicas']),
-      categoria: data['categoria'] ?? '',
-      dataCriacao: (createdTs ?? updatedTs)?.toDate(),
-      updatedAt: updatedTs?.toDate(),
-      audioDescricaoUrl: data['audioDescricaoUrl'],
-      resumoInterface: data['resumoInterface'],
-      cuidadosAvancados: data['cuidadosAvancados'] != null
-          ? List<Map<String, dynamic>>.from(data['cuidadosAvancados'])
+      composicaoQuimica: data['composicaoQuimica'] is Map
+          ? Map<String, dynamic>.from(data['composicaoQuimica'] as Map)
           : null,
-      locais: data['locais'] != null
-          ? List<Map<String, dynamic>>.from(data['locais'])
+      propriedadesFarmacologicas: data['propriedadesFarmacologicas'] is List
+          ? List<dynamic>.from(data['propriedadesFarmacologicas'] as List)
+          : null,
+      tiposEstudo: data['tiposEstudo'] is Map
+          ? Map<String, dynamic>.from(data['tiposEstudo'] as Map)
+          : null,
+      referenciaGeral: _parseList(data['referenciaGeral']),
+      referenciasCientificas: data['referenciasCientificas'] is List
+          ? List<dynamic>.from(data['referenciasCientificas'] as List)
+          : null,
+      referenciasFarmacologicas: _parseList(data['referenciasFarmacologicas']),
+      categoria: data['categoria']?.toString() ?? '',
+      dataCriacao: createdDate ?? updatedDate,
+      updatedAt: updatedDate,
+      audioDescricaoUrl: data['audioDescricaoUrl']?.toString(),
+      resumoInterface: data['resumoInterface']?.toString(),
+      cuidadosAvancados: data['cuidadosAvancados'] is List
+          ? (data['cuidadosAvancados'] as List)
+              .whereType<Map>()
+              .map((m) => Map<String, dynamic>.from(m))
+              .toList()
+          : null,
+      locais: data['locais'] is List
+          ? (data['locais'] as List)
+              .whereType<Map>()
+              .map((m) => Map<String, dynamic>.from(m))
+              .toList()
           : null,
       aspectosUso: _parseList(data['aspectosUso']),
       isPopular: data['isPopular'] == true,
+      status: resolvedStatus,
     );
+  }
+
+  /// Converte para Map serializável em JSON para armazenamento Offline local.
+  Map<String, dynamic> toJsonMap() {
+    return {
+      'id': id,
+      'nome': nome,
+      'nomeCientifico': nomeCientifico,
+      'descricao': descricao,
+      'descricaoCurta': descricaoCurta,
+      'descricaoSimples': descricaoSimples,
+      'imagemUrl': imagemUrl,
+      'imagensExtras': imagensExtras,
+      'modelo3dUrl': modelo3dUrl,
+      'audioUrl': audioUrl,
+      'distribuicaoHabitat': distribuicaoHabitat,
+      'fenologia': fenologia,
+      'usosEValorEconomico': usosEValorEconomico,
+      'taxonomiaNomesPopulares': taxonomiaNomesPopulares,
+      'descobertasCientificas': descobertasCientificas,
+      'beneficios': beneficios,
+      'comoUsar': comoUsar,
+      'cuidados': cuidados,
+      'farmacologia': farmacologia,
+      'creatorId': creatorId,
+      'excluida': excluida,
+      'keywords': keywords,
+      'composicaoQuimica': composicaoQuimica,
+      'propriedadesFarmacologicas': propriedadesFarmacologicas,
+      'tiposEstudo': tiposEstudo,
+      'referenciaGeral': referenciaGeral,
+      'referenciasCientificas': referenciasCientificas,
+      'referenciasFarmacologicas': referenciasFarmacologicas,
+      'categoria': categoria,
+      'dataCriacao': dataCriacao?.millisecondsSinceEpoch,
+      'updatedAt': updatedAt?.millisecondsSinceEpoch,
+      'audioDescricaoUrl': audioDescricaoUrl,
+      'resumoInterface': resumoInterface,
+      'cuidadosAvancados': cuidadosAvancados,
+      'locais': locais,
+      'aspectosUso': aspectosUso,
+      'isPopular': isPopular,
+      'status': status,
+    };
   }
 }
