@@ -1,13 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 import '../utils/app_constants.dart';
 import 'edit_plant_screen.dart';
 
-// Tela para gerenciar plantas. A capacidade de deletar plantas é
-// condicionada ao cargo do usuário: 'super_admin' pode apagar tudo,
-// 'escritor' pode apagar apenas o que criou.
 class ManagePlantsScreen extends StatefulWidget {
   const ManagePlantsScreen({super.key});
 
@@ -16,7 +12,6 @@ class ManagePlantsScreen extends StatefulWidget {
 }
 
 class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
-  // Armazena o cargo do usuário atual (carregado do documento 'users/<uid>')
   String _userRole = AppConstants.statusCarregando;
 
   int _limit = 20;
@@ -41,7 +36,6 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
     super.dispose();
   }
 
-  // Carrega o cargo do usuário logado a partir do Firestore.
   Future<void> _loadUserRole() async {
     final role = await AuthService().getUserRole();
     if (mounted) {
@@ -51,7 +45,6 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
     }
   }
 
-  // Função para deletar uma planta.
   Future<void> _deletePlant(String id, String nome) async {
     try {
       await FirebaseFirestore.instance
@@ -86,27 +79,6 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
     }
   }
 
-  // Abre o formulário web de planta no navegador do dispositivo. (LEGADO)
-  // Mantido caso seja necessário reverter ou usar como fallback.
-  // ignore: unused_element
-  Future<void> _abrirFormularioWebLegado(
-    BuildContext context, {
-    required String? plantaId,
-  }) async {
-    final urlStr = plantaId != null
-        ? '${AppConstants.webFormBaseUrl}?id=$plantaId'
-        : AppConstants.webFormBaseUrl;
-    final uri = Uri.parse(urlStr);
-
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível abrir o navegador.')),
-        );
-      }
-    }
-  }
-
   void _navigateToEditScreen(BuildContext context, {String? plantaId}) {
     Navigator.push(
       context,
@@ -118,7 +90,6 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. PEGAMOS O ID DO USUÁRIO ATUAL LOGADO
     final String? currentUserId = AuthService().getCurrentUserId();
 
     return Scaffold(
@@ -130,27 +101,40 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: () {
-          Query query = FirebaseFirestore.instance.collection(AppConstants.collectionPlants).where('excluida', isNotEqualTo: true);
+          Query query = FirebaseFirestore.instance
+              .collection(AppConstants.collectionPlants)
+              .where('excluida', isNotEqualTo: true);
           if (_userRole == AppConstants.roleEscritor && currentUserId != null) {
             query = query.where(AppConstants.fieldCreatorId, isEqualTo: currentUserId);
           }
-          return query.orderBy('excluida').orderBy('dataCriacao', descending: true).limit(_limit).snapshots();
+          return query
+              .orderBy('excluida')
+              .orderBy('dataCriacao', descending: true)
+              .limit(_limit)
+              .snapshots();
         }(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            debugPrint('Erro ao carregar plantas: \${snapshot.error}');
+            debugPrint('Erro ao carregar plantas: ${snapshot.error}');
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Icon(Icons.error_outline, color: Colors.red, size: 48),
                   const SizedBox(height: 12),
-                  const Text('Erro ao carregar plantas.', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Erro ao carregar plantas.',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 4),
-                  Text('\${snapshot.error}', style: const TextStyle(fontSize: 12, color: Colors.grey), textAlign: TextAlign.center),
+                  Text(
+                    '${snapshot.error}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             );
@@ -167,16 +151,16 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
             itemCount: plantas.length + 1,
             itemBuilder: (context, index) {
               if (index == plantas.length) {
-                return plantas.length >= _limit 
-                    ? const Padding(padding: EdgeInsets.all(16.0), child: Center(child: CircularProgressIndicator()))
+                return plantas.length >= _limit
+                    ? const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
                     : const SizedBox.shrink();
               }
               final planta = plantas[index];
               final data = planta.data() as Map<String, dynamic>;
-              final String nome =
-                  data[AppConstants.fieldNome] ?? 'Planta sem nome';
-
-              // 2. PEGAMOS O ID DO CRIADOR DA PLANTA
+              final String nome = data[AppConstants.fieldNome] ?? 'Planta sem nome';
               final String? plantCreatorId = data[AppConstants.fieldCreatorId];
 
               final tile = ListTile(
@@ -189,21 +173,15 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
                 ),
               );
 
-              // 3. NOVA LÓGICA DE PERMISSÃO
               bool canDelete = false;
-
-              // O Super Admin pode deletar qualquer coisa
               if (_userRole == AppConstants.roleSuperAdmin) {
                 canDelete = true;
-              }
-              // O Escritor só pode deletar se o ID dele for igual ao ID do criador
-              else if (_userRole == AppConstants.roleEscritor &&
+              } else if (_userRole == AppConstants.roleEscritor &&
                   plantCreatorId != null &&
                   plantCreatorId == currentUserId) {
                 canDelete = true;
               }
 
-              // Se PUDER DELETAR, mostramos o widget Dismissible
               if (canDelete) {
                 return Dismissible(
                   key: Key(planta.id),
@@ -215,14 +193,11 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
                     child: const Icon(Icons.delete, color: Colors.white),
                   ),
                   confirmDismiss: (direction) async {
-                    // Confirma com o usuário antes de apagar
                     final confirm = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
                         title: const Text('Mover para Lixeira'),
-                        content: Text(
-                          'Deseja realmente remover "$nome"? Poderá restaurar no painel web.',
-                        ),
+                        content: Text('Deseja realmente remover "$nome"?'),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(false),
@@ -242,7 +217,6 @@ class _ManagePlantsScreenState extends State<ManagePlantsScreen> {
                 );
               }
 
-              // Usuários que NÃO PODEM DELETAR veem o tile simples
               return tile;
             },
           );

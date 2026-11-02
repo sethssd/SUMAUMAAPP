@@ -12,7 +12,8 @@ import '../widgets/home/popular_plants_row.dart';
 import '../widgets/home/recentes_carousel.dart';
 import '../widgets/home/search_filter_modal.dart';
 import '../widgets/home/todas_plantas_hub_card.dart';
-import '../widgets/side_menu.dart';
+import '../screens/account_screen.dart';
+import '../services/account_library_service.dart';
 import '../utils/app_theme.dart';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
@@ -75,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _tabPageController = PageController(initialPage: _currentNavIndex);
+    AccountLibraryService().ensureInitialized();
     _fetchHubData();
     _fetchPlantas(reset: true);
     _catalogScrollController.addListener(_onCatalogScroll);
@@ -324,7 +326,6 @@ class _HomeScreenState extends State<HomeScreen> {
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: isDark ? SumaColors.darkBg : SumaColors.lightBg,
-        drawer: const SideMenu(),
         body: !_hubLoaded && _isInitialLoading
             ? Center(
                 child: CircularProgressIndicator(
@@ -375,36 +376,46 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ── Cabeçalho superior com menu hambúrguer, avatar e pesquisa inline ───────
+  // ── Cabeçalho superior com botão de Minha Conta (avatar) e pesquisa inline ──
 
   Widget _buildTopHeader(bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Column(
         children: [
-          // Linha 1: menu hambúrguer + avatar circular
+          // Linha 1: identidade Sumaúma + botão circular Minha Conta no topo direito
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Builder(builder: (ctx) {
-                return GestureDetector(
-                  onTap: () => Scaffold.of(ctx).openDrawer(),
-                  child: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: Icon(
-                      Icons.menu_rounded,
-                      color: isDark ? Colors.white : Colors.black,
-                      size: 32,
+              Row(
+                children: [
+                  Image.asset(
+                    isDark ? 'icons/ico-branco.png' : 'icons/ico-verde.png',
+                    width: 34,
+                    height: 34,
+                    fit: BoxFit.contain,
+                    color: isDark ? Colors.white : SumaColors.greenAccentDark,
+                    colorBlendMode: BlendMode.srcIn,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Sumaúma',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                      color: isDark ? Colors.white : SumaColors.greenAccentDark,
                     ),
                   ),
-                );
-              }),
+                ],
+              ),
               GestureDetector(
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Use o menu lateral para gerenciar sua conta.'),
-                      duration: Duration(seconds: 2),
+                  _searchFocusNode.unfocus();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AccountScreen(),
                     ),
                   );
                 },

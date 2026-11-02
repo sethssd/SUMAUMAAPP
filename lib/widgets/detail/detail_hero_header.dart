@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/plant_model.dart';
+import '../../services/account_library_service.dart';
 import '../../utils/app_theme.dart';
 
 /// Header imersivo com foto principal + galeria lateral de miniaturas.
@@ -69,7 +70,16 @@ class _DetailHeroHeaderState extends State<DetailHeroHeader> {
             children: [
               _buildTopBtn(Icons.arrow_back_ios_new_rounded, () => Navigator.pop(context)),
               Row(children: [
-                _buildTopBtn(Icons.bookmark_border_rounded, () {}),
+                ValueListenableBuilder<Set<String>>(
+                  valueListenable: AccountLibraryService().savedPlantIdsNotifier,
+                  builder: (context, savedIds, _) {
+                    final isSaved = savedIds.contains(widget.plant.id);
+                    return _buildTopBtn(
+                      isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                      () => AccountLibraryService().showSavePlantModal(context, widget.plant),
+                    );
+                  },
+                ),
                 const SizedBox(width: 8),
                 _buildTopBtn(Icons.home_outlined, () => Navigator.popUntil(context, (r) => r.isFirst)),
               ]),

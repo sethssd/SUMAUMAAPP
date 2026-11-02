@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/plant_model.dart';
+import '../services/account_library_service.dart';
 import '../utils/app_theme.dart';
 import '../widgets/detail/detail_hero_header.dart';
 import '../widgets/detail/detail_3d_viewer.dart';
@@ -10,13 +11,20 @@ import '../widgets/detail/tabs/referencias_tab.dart';
 import '../widgets/detail/detail_audio_player.dart' as import_detail_audio_player;
 
 /// Tela de detalhes de uma planta.
-/// Responsabilidades: fetch do Firestore (cache-first), controle das 3 abas
+/// Responsabilidades: fetch do Firestore (cache-first + fallback offline), controle das 3 abas
 /// e injeção do PlantModel nos sub-widgets do diretório widgets/detail/.
 class DetailScreen extends StatefulWidget {
   final String plantaId;
   /// Índice da aba a abrir ao entrar na tela (0=Geral, 1=Científico, 2=Artigos).
   final int initialTab;
-  const DetailScreen({super.key, required this.plantaId, this.initialTab = 0});
+  /// Modelo em memória/offline usado como fallback caso não haja conexão.
+  final PlantModel? offlineFallbackPlant;
+  const DetailScreen({
+    super.key,
+    required this.plantaId,
+    this.initialTab = 0,
+    this.offlineFallbackPlant,
+  });
 
   @override
   State<DetailScreen> createState() => _DetailScreenState();
@@ -62,7 +70,12 @@ class _DetailScreenState extends State<DetailScreen>
     }
     if (mounted) {
       setState(() {
-        if (snap != null && snap.exists) _plant = PlantModel.fromSnapshot(snap);
+        if (snap != null && snap.exists) {
+          _plant = PlantModel.fromSnapshot(snap);
+        } else {
+          _plant = widget.offlineFallbackPlant ??
+              AccountLibraryService().getOfflinePlant(widget.plantaId);
+        }
         _isLoading = false;
       });
     }

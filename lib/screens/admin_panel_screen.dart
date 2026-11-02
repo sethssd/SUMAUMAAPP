@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 import '../utils/app_constants.dart';
 import '../utils/app_theme.dart';
+import 'edit_plant_screen.dart';
 import 'manage_admins_screen.dart';
 import 'manage_plants_screen.dart';
 
@@ -88,19 +88,13 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
     }
   }
 
-  Future<void> _openWebForm({String? plantaId}) async {
-    final urlStr = plantaId != null
-        ? '${AppConstants.webFormBaseUrl}?id=$plantaId'
-        : AppConstants.webFormBaseUrl;
-    final uri = Uri.parse(urlStr);
-
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível abrir o navegador.')),
-        );
-      }
-    }
+  void _openPlantEditor({String? plantaId}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditPlantScreen(plantaId: plantaId),
+      ),
+    );
   }
 
   Future<void> _deletePlant(String id, String nome) async {
@@ -161,7 +155,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openWebForm(),
+        onPressed: () => _openPlantEditor(),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Nova Planta'),
         backgroundColor: SumaColors.greenBright,
@@ -436,7 +430,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen> {
                       size: 20,
                     ),
                     tooltip: 'Editar planta',
-                    onPressed: () => _openWebForm(plantaId: planta.id),
+                    onPressed: () => _openPlantEditor(plantaId: planta.id),
                   ),
                   IconButton(
                     icon: const Icon(
