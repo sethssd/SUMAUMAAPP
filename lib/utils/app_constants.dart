@@ -3,9 +3,6 @@ class AppConstants {
   static const String collectionUsers = 'users';
   static const String collectionPlants = 'plantas';
 
-  // URL da Central Editorial e Administração Web Unificada
-  static const String webFormBaseUrl = 'https://badernaapk.web.app/admin';
-
   // IDs de sistema
   static const String audioChannelId = 'br.edu.ufopa.baderna.channel.audio';
 

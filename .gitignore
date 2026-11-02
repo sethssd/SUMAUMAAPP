@@ -53,6 +53,7 @@ analyze_utf8.txt
 *.txt
 
 # Firebase Config Files
+.firebase/
 android/app/google-services.json
 firebase.json
 bfg-1.15.0.jar

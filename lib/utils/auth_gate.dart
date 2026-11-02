@@ -26,7 +26,7 @@ class AuthGate extends StatelessWidget {
           return const HomeScreen();
         }
 
-        // Sem sessão → tela pública de login
+        // Sem sessão → tela pública de login (fluxo idêntico ao mobile)
         return const PublicLoginScreen();
       },
     );

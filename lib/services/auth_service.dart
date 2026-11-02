@@ -192,6 +192,19 @@ class AuthService {
     }
   }
 
+  // ── ANONYMOUS / GUEST ──────────────────────────────────────
+
+  Future<UserCredential?> signInAnonymously() async {
+    try {
+      final credential = await _auth.signInAnonymously();
+      await _ensureUserDocument(credential.user!);
+      return credential;
+    } catch (e) {
+      debugPrint('Erro no login anônimo: $e');
+      rethrow;
+    }
+  }
+
   // ── SIGN OUT ──────────────────────────────────────────────
 
   Future<void> signOut() async {
